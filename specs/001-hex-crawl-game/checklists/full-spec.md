@@ -22,7 +22,7 @@
 - [X] CHK009 — Is the Casual-mode recovery mechanic specified — how does an incapacitated character return to the active roster and under what conditions? [Completeness, Spec §FR-013, Gap]
 - [X] CHK010 — Are all terrain types fully enumerated with their passability rules and movement costs, or are terrain types only referenced by example? [Completeness, Spec §Key Entities – HexTile, Gap]
 - [ ] CHK011 — Are requirements defined for the main menu structure and all navigable flows beyond mode select and load game? [Completeness, Gap]
-- [ ] CHK012 — Are town interaction requirements specified beyond "level 1 heroes available for hire" — what is shown, how is hiring confirmed, and what costs are involved? [Completeness, Spec §FR-012a, Gap]
+- [X] CHK012 — Are town interaction requirements specified beyond "level 1 heroes available for hire" — what is shown, how is hiring confirmed, and what costs are involved? [Completeness, Spec §FR-012a, Gap]
 - [ ] CHK013 — Is the recruitment offer UI flow specified — exactly when the offer appears, what information is shown, and what player actions are available for the FR-012b encounter? [Completeness, Spec §FR-012b, Gap]
 - [ ] CHK014 — Are save slot requirements defined — how many slots exist in Casual mode, and is there a slot naming, overwriting, or deletion UI? [Completeness, Spec §FR-008, Gap]
 - [ ] CHK015 — Are requirements defined for how "game version" is stored in SaveState and what constitutes a breaking version mismatch for import validation? [Completeness, Spec §Key Entities – SaveState, Edge Cases, Gap]

@@ -214,6 +214,7 @@ interface EnemyUnit {
   id: string;
   name: string;
   classId: string;
+  tier: 1 | 2 | 3;           // used for gold-drop scaling: tier 1 = ×1, tier 2 = ×2, tier 3 = ×3
   level: number;
   hp: number;
   maxHp: number;

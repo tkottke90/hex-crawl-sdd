@@ -123,6 +123,7 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - Q: Can a player act units in any order during the Player Phase? → A: Yes — fully flexible order. The player may move unit A, then move unit B, then commit unit A's action. The only constraint is that an exhausted unit (one that has already acted) cannot be selected again that phase.
 - Q: What happens after the player wins a combat encounter? → A: A Victory Summary screen is shown first (enemies defeated, XP per character, any deaths during the encounter). The player dismisses it with "Continue", returns to the world map, and the enemy tile is cleared — enemy icon removed, tile reverts to passable empty terrain.
 - Q: Do natural 1 and natural 20 on a d20 attack roll have special rules? → A: Natural 20 rolls double the damage dice but is NOT an auto-hit — a sufficiently high AC can still prevent the hit. Natural 1 is treated as a definite miss regardless of modifiers and is displayed as "Critical Miss" (the effect is a placeholder extension point for v2 features).
+- Q: Is town hiring free or does it have a gold cost? → A: Hiring has a gold cost. Players start each run with 20 gold. Hiring a level 1 hero costs 20 gold. Gold is earned from kills (scaled by enemy level and tier) and a camp-clear bonus (scaled by average enemy level). Gold is saved in SaveState and reloads to the saved value on Casual mode reload.
 
 ---
 
@@ -145,7 +146,8 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - **FR-010**: The game MUST support exporting a save file as a downloadable file to the player's device.
 - **FR-011**: The game MUST support importing a save file from the player's device.
 - **FR-012**: The party MUST always begin with exactly 2 characters: the **Player Character** (PC — the hero/leader, player-selected at run start) and the **Escort** (the person being protected to the destination). Additional **Adventurers** MAY join through recruitment, growing the party to a maximum of 8 total members.
-- **FR-012a**: Towns MUST offer level 1 heroes available for hire to expand the party.
+- **FR-012a**: Towns MUST offer level 1 heroes available for hire to expand the party. Hiring a hero costs **20 gold**. If the player has insufficient gold, the hire is rejected with a notification.
+- **FR-012d**: Each run begins with a starting gold amount of **20 gold**. Gold is earned by: (a) a **per-kill reward** — `floor(enemy.level × tierMultiplier × (1 + random(0,1)))` where `tierMultiplier` is 1 for Tier 1, 2 for Tier 2, 3 for Tier 3 (enemies); and (b) a **camp-clear bonus** — `floor(avgEnemyLevel × 5)` awarded once when all enemies in a camp are defeated. Gold is part of `SaveState` and reloads to the saved value on Casual reload.
 - **FR-012b**: A rare combat event (trigger probability < 10%) MUST exist in which the party stumbles upon an in-progress fight containing a higher-level friendly NPC. The NPC's level is `clamp(averagePartyLevel + 2, 3, 15)`. The NPC is AI-controlled during that encounter. If the player wins and the NPC survives, they offer to join the party.
 - **FR-012c**: During a recruitment combat event the friendly NPC MUST NOT be player-controlled; the player MUST NOT be able to issue commands to them.
 - **FR-013**: In Casual mode, the player MAY reload any previously saved state to avoid or undo the death of the PC or Escort. Save-scumming is intentionally permitted. Adventurer deaths are permanent in all cases regardless of reloading; their death record (hex coordinates, turn number) persists across save reloads.
@@ -163,7 +165,7 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - **WorldMap**: Seed value, dimensions, hex tile collection, placed towns, placed encounter zones, generation parameters.
 - **CombatEncounter**: Participating units, current phase (Player / Enemy), acting-unit queue within phase, active round count, combat log, resolution state.
 - **DiceRoll**: Roll type (attack/damage/save), dice notation (e.g., 2d6+3), individual die results, modifier breakdown, total.
-- **SaveState**: Mode, map state, character roster, current location, timestamp, game version, `deathHistory: DeathRecord[]` (cumulative log of all fallen characters — survives Casual reloads), `invalidated: boolean` (set `true` on PC/Escort death in Roguelike mode — prevents all further loads).
+- **SaveState**: Mode, map state, character roster, current location, timestamp, game version, `gold: number` (current run gold balance), `deathHistory: DeathRecord[]` (cumulative log of all fallen characters — survives Casual reloads), `invalidated: boolean` (set `true` on PC/Escort death in Roguelike mode — prevents all further loads).
 - **GameMode**: Type (Casual / Roguelike), save permission rules. Casual: manual save permitted at any time outside combat; player may reload prior saves freely; Adventurer deaths are still permanent. Roguelike: auto-save only; save permanently invalidated on PC or Escort death.
 - **MetaProgressionModule** *(v1 stub — no active data)*: Interface placeholder satisfying Constitution Principle IV. In v1 it persists an empty record. Future versions populate it with run outcomes, unlocks, and carry-over options without changing the core save contract.
 

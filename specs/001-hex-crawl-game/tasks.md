@@ -38,14 +38,14 @@
 
 **⚠️ CRITICAL**: This phase BLOCKS all user story phases.
 
-- [ ] T010 Create all TypeScript model interfaces from `data-model.md` in files under `src/models/`: `src/models/attributes.ts` (`Attributes`), `src/models/class.ts` (`ClassDefinition`, `ClassTier`), `src/models/character.ts` (`Character`, `CharacterRole`, `CharacterStatus`, `RecruitmentSource`, `DeathRecord`) — **include `role: CharacterRole` and `deathRecord: DeathRecord | null` on `Character`; `CharacterStatus = 'active' | 'dead'` only (no `incapacitated`)**, `src/models/status-effect.ts` (`StatusEffect`), `src/models/hex.ts` (`HexCoord`, `HexTile`, `TerrainType`, `PoiTag`), `src/models/world-map.ts` (`WorldMap`), `src/models/town.ts` (`Town`, `HireableHero`), `src/models/enemy.ts` (`EnemyCamp`, `EnemyUnit`), `src/models/combat.ts` (`CombatEncounter`, `DiceRoll`), `src/models/recruitment.ts` (`RecruitmentEvent`), `src/models/save.ts` (`GameMode`, `SaveState`) — **include `deathHistory: DeathRecord[]` and `invalidated: boolean` on `SaveState`**, `src/models/meta-progression.ts` (`MetaProgressionModule`)
+- [ ] T010 Create all TypeScript model interfaces from `data-model.md` in files under `src/models/`: `src/models/attributes.ts` (`Attributes`), `src/models/class.ts` (`ClassDefinition`, `ClassTier`), `src/models/character.ts` (`Character`, `CharacterRole`, `CharacterStatus`, `RecruitmentSource`, `DeathRecord`) — **include `role: CharacterRole` and `deathRecord: DeathRecord | null` on `Character`; `CharacterStatus = 'active' | 'dead'` only (no `incapacitated`)**, `src/models/status-effect.ts` (`StatusEffect`), `src/models/hex.ts` (`HexCoord`, `HexTile`, `TerrainType`, `PoiTag`), `src/models/world-map.ts` (`WorldMap`), `src/models/town.ts` (`Town`, `HireableHero`), `src/models/enemy.ts` (`EnemyCamp`, `EnemyUnit` — **`EnemyUnit` MUST include `tier: 1 | 2 | 3` for gold-drop scaling per FR-012d**), `src/models/combat.ts` (`CombatEncounter`, `DiceRoll`), `src/models/recruitment.ts` (`RecruitmentEvent`), `src/models/save.ts` (`GameMode`, `SaveState`) — **include `deathHistory: DeathRecord[]`, `invalidated: boolean`, and `gold: number` on `SaveState`**, `src/models/meta-progression.ts` (`MetaProgressionModule`)
 - [ ] T011 Create `src/models/index.ts` barrel export for all model interfaces
 ### TDD — Write Tests First (must FAIL before T016)
 
 - [ ] T012 [P] Write unit tests for `src/utils/prng.ts` in `tests/unit/utils/prng.test.ts`: determinism (same seed → same sequence), uniform distribution spot-check, range bounds.
 - [ ] T013 [P] Write unit tests for `src/utils/dice.ts` in `tests/unit/utils/dice.test.ts`: notation parsing, modifier arithmetic, crit/fumble detection, reproducibility with fixed seed.
 - [ ] T014 [P] Write unit tests for `src/utils/noise.ts` in `tests/unit/utils/noise.test.ts`: seeded determinism, output range 0–1.
-- [ ] T015 [P] Write unit tests for Zod schemas in `tests/unit/schemas/`: `hex.test.ts` (invariant `q+r+s !== 0` must fail parse, valid coord passes); `save.test.ts` (valid `SaveState` round-trip passes — **must assert `deathHistory: []` and `invalidated: false` are present on fresh state**); `character.test.ts` (**must assert `role` is one of `'pc'|'escort'|'adventurer'`; reject unknown role; accept `deathRecord: null` and `deathRecord: { coord, turn }`**); `world-map.test.ts`.
+- [ ] T015 [P] Write unit tests for Zod schemas in `tests/unit/schemas/`: `hex.test.ts` (invariant `q+r+s !== 0` must fail parse, valid coord passes); `save.test.ts` (valid `SaveState` round-trip passes — **must assert `deathHistory: []`, `invalidated: false`, and `gold: 20` are present on fresh state; must assert `gold: z.number()` is required and rejects missing/non-numeric values**); `character.test.ts` (**must assert `role` is one of `'pc'|'escort'|'adventurer'`; reject unknown role; accept `deathRecord: null` and `deathRecord: { coord, turn }`**); `world-map.test.ts`.
 
 ### Implementation
 
@@ -83,7 +83,7 @@
 - [ ] T031 [US1] Create `src/game/scenes/Boot.ts` Phaser scene: registers all asset keys for tilesets and character portraits (placeholder 32×32 colored tiles acceptable for v1).
 - [ ] T032 [US1] Create `src/game/scenes/Preloader.ts` Phaser scene: loads all assets registered in Boot, shows progress bar using a Tailwind-styled HTML overlay (`pointer-events-none`).
 - [ ] T033 [US1] Create `src/game/scenes/MainMenu.ts` Phaser scene: "New Game" button → mode selection (Casual / Roguelike) → **class selection** (renders one card per `ClassDefinition` from `src/data/classes.ts` with name, tier, and a brief stat summary; player picks one) → emits `game:start` with chosen `GameMode` and selected `classId`. Mode label persisted in scene registry. Load Game and Import Save buttons also present (wired in T069).
-- [ ] T034 [US1] Create `src/game/scenes/WorldMap.ts` Phaser scene: on `game:start`, calls `generateMap(seed, 40, 30)`, creates `HexGridModule`, renders hex tilemap via Phaser `TilemapLayer` (staggered hex or manual tile rendering). Constructs the starting party: exactly 1 **PC** (player-chosen class from mode-select screen, `role: 'pc'`, `recruitmentSource: 'starting'`) and 1 **Escort** (pre-authored template from `src/data/escort.ts`, `role: 'escort'`, `recruitmentSource: 'starting'`). Both characters placed at `playerStartCoord`. Handles tile click → `findPath` → `moveOccupant` → tween character sprite.
+- [ ] T034 [US1] Create `src/game/scenes/WorldMap.ts` Phaser scene: on `game:start`, calls `generateMap(seed, 40, 30)`, creates `HexGridModule`, renders hex tilemap via Phaser `TilemapLayer` (staggered hex or manual tile rendering). Constructs the starting party: exactly 1 **PC** (player-chosen class from mode-select screen, `role: 'pc'`, `recruitmentSource: 'starting'`) and 1 **Escort** (pre-authored template from `src/data/escort.ts`, `role: 'escort'`, `recruitmentSource: 'starting'`). Both characters placed at `playerStartCoord`. Handles tile click → `findPath` → `moveOccupant` → tween character sprite. **Initialises the run `SaveState.gold` to 20 (FR-012d starting gold) when constructing the initial save snapshot passed to `Serialiser`/`AutoSave`.**
 - [ ] T035 [US1] Create `src/game/ui/StatPanel.ts`: Tailwind HTML overlay (`pointer-events-none` except panel itself); renders selected `Character` name, class, level, HP bar, and `Attributes` grid. Subscribes to `character:selected` event.
 - [ ] T036 [US1] Wire `src/game/main.ts` Phaser `Game` config: register Boot → Preloader → MainMenu → WorldMap scene pipeline. Set `type: Phaser.AUTO`, `parent: 'game-container'`, pointered input enabled.
 
@@ -209,11 +209,13 @@
 
 ### TDD — Write Tests First
 
-- [ ] T078 [P] Write unit tests for `RecruitmentModule` in `tests/unit/recruitment/recruitment.test.ts`: `getHirePool(town)` returns `hirePool`; `hireCharacter(hero, party)` adds to party if `party.length < 8`; `hireCharacter` throws if party full; `rollRecruitmentEncounter(combat, prng)` returns event <10% of the time.
+- [ ] T078 [P] Write unit tests for `RecruitmentModule` in `tests/unit/recruitment/recruitment.test.ts`: `getHirePool(town)` returns `hirePool`; `hireCharacter(hero, party, 25)` → `{ character: Character, goldAfter: 5 }` (asserts deduction = `hero.hireCost`, not a hardcoded value) when party has room and gold ≥ `hero.hireCost`; `hireCharacter(hero, fullParty, 20)` → `{ error: 'party-full' }` (return-value check — NOT a thrown exception); `hireCharacter(hero, party, 0)` → `{ error: 'insufficient-gold' }`; `rollRecruitmentEncounter(combat, prng)` returns event <10% of the time.
+- [ ] T078a [P] Write unit tests for `GoldRewardCalculator` in `tests/unit/combat/gold-reward.test.ts`: `killReward(enemy, prng)` with a fixed-seed `PRNG` instance returns a deterministic value matching `Math.floor(enemy.level × enemy.tier × (1 + prng.next()))`; verify Tier 1/2/3 enemy produces proportionally scaled rewards; `campClearBonus(enemies)` returns `Math.floor(avgLevel × 5)` for a known set; seeded reproducibility — same seed + same enemy always returns same reward.
 
 ### Implementation
 
-- [ ] T079 Implement `src/modules/recruitment/TownService.ts`: `getHirePool(town: Town): HireableHero[]`, `hireCharacter(hero: HireableHero, party: Character[]): Character[]` — validates party cap, converts template to full `Character` with `role: 'adventurer'` and `recruitmentSource: 'hired'` (never `'starting'` — that is reserved for the PC and Escort created at run start in T034).
+- [ ] T079 Implement `src/modules/recruitment/TownService.ts`: `getHirePool(town: Town): HireableHero[]`, `hireCharacter(hero: HireableHero, party: Character[], currentGold: number): { character: Character; goldAfter: number } | { error: 'party-full' | 'insufficient-gold' }` — validates party cap and gold balance; hero `hireCost` is always 20 gold (set when generating `HireableHero` templates); converts template to full `Character` with `role: 'adventurer'` and `recruitmentSource: 'hired'`.
+- [ ] T079a [P] Implement `src/modules/combat/GoldRewardCalculator.ts`: pure functions — `killReward(enemy: EnemyUnit, prng: PRNG): number` = `Math.floor(enemy.level * enemy.tier * (1 + prng.next()))` (seeded PRNG — deterministic and testable); `campClearBonus(enemies: EnemyUnit[]): number` = `Math.floor(avgLevel(enemies) * 5)`. Both functions accept no Phaser or global state. Called by `Combat.ts` after each unit-defeated event and on camp clear. Returns gold delta to be added to `SaveState.gold`. **Starting gold**: `SaveState.gold` initialises to 20 at run start (set in `WorldMap.ts` T034).
 - [ ] T080 Implement `src/modules/recruitment/EncounterTrigger.ts`: `rollRecruitmentEncounter(encounter: CombatEncounter, unitLookup: Record<string, EnemyUnit>, prng: PRNG): RecruitmentEvent | null` — rolls prng < 0.1; if triggered, selects a random ID from `encounter.friendlyNpcs` (`string[]`), resolves it to the full `EnemyUnit` via `unitLookup[id]`, then constructs and returns the `RecruitmentEvent`. (`CombatEncounter` stores only id arrays; callers pass the lookup map.) The friendly NPC's level MUST be `clamp(averagePartyLevel + 2, 3, 15)` (FR-012b).
 - [ ] T080a Implement friendly NPC AI in `src/modules/recruitment/FriendlyNpcAi.ts`: `takeTurn(npc: EnemyUnit, encounter: CombatEncounter, hexGrid: HexGridModule): void` — simple AI (move toward nearest enemy, attack if in range); NPC unit MUST be registered in `PhaseManager` as a third-party actor, excluded from `getPlayerControllableUnits()`. Satisfies FR-012c.
 - [ ] T081 Assemble `src/modules/recruitment/index.ts`: export `createRecruitmentModule(): RecruitmentModule` satisfying `contracts/recruitment.contract.md`.
@@ -283,7 +285,7 @@ Phase 1 (Setup)
 | Phase 5 | T050+T051 together |
 | Phase 6 | T059+T060+T061+T062 together; T063+T064+T065+T066+T067 together |
 | Phase 7 | T071+T072 together |
-| Phase 8 | T078 alone (other tasks sequential) |
+| Phase 8 | T078 + T078a together (TDD group); other tasks sequential |
 | Phase 10 | T086+T087+T088+T089+T091+T092 together |
 
 ---
@@ -325,7 +327,7 @@ Deliver a browser-runnable game where a player can:
 | Phase 5: US3 progression | T050–T058 + T057a (10 tasks) | US3 (P3) |
 | Phase 6: US4 save | T059–T070 (12 tasks) | US4 (P4) |
 | Phase 7: US5 modes | T071–T077 + T073a (8 tasks) | US5 (P5) |
-| Phase 8: Recruitment | T078–T083 (6 tasks) | cross-cutting |
+| Phase 8: Recruitment | T078–T083 + T078a + T079a (8 tasks) | cross-cutting |
 | Phase 9: Stub | T084–T085 (2 tasks) | — |
-| Phase 10: Polish | T086–T092 + T093a (8 tasks) | — |
-| **Total** | **95 tasks** | |
+| Phase 10: Polish | T086–T094 + T093a (10 tasks) | — |
+| **Total** | **98 tasks** | |
