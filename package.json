@@ -1,0 +1,34 @@
+{
+  "name": "hex-game-scaffold",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:ui": "playwright test --headed --ui",
+    "validate": "bash scripts/validate-quickstart.sh",
+    "check-build": "node scripts/check-build-size.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@tailwindcss/vite": "^4.2.4",
+    "@vitest/coverage-v8": "^4.1.5",
+    "jsdom": "^29.0.2",
+    "tailwindcss": "^4.2.4",
+    "typescript": "~6.0.2",
+    "vite": "^8.0.9",
+    "vitest": "^4.1.5"
+  },
+  "dependencies": {
+    "idb": "^8.0.3",
+    "phaser": "^4.0.0",
+    "simplex-noise": "^4.0.3",
+    "zod": "^4.3.6"
+  }
+}
