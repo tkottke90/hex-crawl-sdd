@@ -55,8 +55,8 @@ auto_commit:
     enabled: false
     message: "[Spec Kit] Add checklist"
   after_analyze:
-    enabled: true
-    message: "[Spec Kit] Apply analysis remediations"
+    enabled: false
+    message: "[Spec Kit] Add analysis report"
   after_taskstoissues:
     enabled: false
     message: "[Spec Kit] Sync tasks to issues"
