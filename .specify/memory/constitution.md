@@ -45,6 +45,10 @@ future expansion without refactoring the entire codebase. Each module should hav
 
 Likewise, reuseable utility systems should be designed such that they are ignorant to the larger nuance of where they are used.
 
+### V. All Features are Built from `main`
+
+All new features/branches are build on top of main.  This is best practice for git and with it we practice Trunk Flow where main is the deployable single source of truth and the feature branches are short lived and merged back into main as soon as the feature is complete.  This ensures that we always have a working version of the game in main and reduces the risk of merge conflicts and integration issues.
+
 ## Tech Stack
 
 - **Language**: TypeScript (strict mode enabled)
