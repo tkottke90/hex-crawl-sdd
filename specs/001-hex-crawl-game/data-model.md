@@ -98,16 +98,19 @@ interface Character {
   recruitmentSource: RecruitmentSource;
   status: CharacterStatus;
   statusEffects: StatusEffect[];
+  deathRecord: DeathRecord | null; // null if alive; set when status becomes 'dead'
   actedThisPhase: boolean;      // exhausted flag; reset each Player Phase start
 }
 ```
 
 **State transitions**:
 ```
-active ──[hp reaches 0, Casual mode]──► incapacitated
-active ──[hp reaches 0, Roguelike mode]──► dead (removed from roster)
-incapacitated ──[recovery after combat, Casual]──► active (hp = 1)
+active ──[hp reaches 0, any mode]──► dead
 ```
+
+Mode behavior on death:
+- **Casual**: player MAY reload a prior save to undo PC/Escort death (save-scumming permitted). Adventurer deaths are permanent regardless of reloads.
+- **Roguelike**: `SaveState.invalidated = true` on PC or Escort death — no reload path.
 
 ---
 

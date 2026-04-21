@@ -38,21 +38,21 @@
 
 **⚠️ CRITICAL**: This phase BLOCKS all user story phases.
 
-- [ ] T010 Create all TypeScript model interfaces from `data-model.md` in files under `src/models/`: `src/models/attributes.ts` (`Attributes`), `src/models/class.ts` (`ClassDefinition`, `ClassTier`), `src/models/character.ts` (`Character`, `CharacterStatus`, `RecruitmentSource`), `src/models/status-effect.ts` (`StatusEffect`), `src/models/hex.ts` (`HexCoord`, `HexTile`, `TerrainType`, `PoiTag`), `src/models/world-map.ts` (`WorldMap`), `src/models/town.ts` (`Town`, `HireableHero`), `src/models/enemy.ts` (`EnemyCamp`, `EnemyUnit`), `src/models/combat.ts` (`CombatEncounter`, `DiceRoll`), `src/models/recruitment.ts` (`RecruitmentEvent`), `src/models/save.ts` (`GameMode`, `SaveState`), `src/models/meta-progression.ts` (`MetaProgressionModule`)
+- [ ] T010 Create all TypeScript model interfaces from `data-model.md` in files under `src/models/`: `src/models/attributes.ts` (`Attributes`), `src/models/class.ts` (`ClassDefinition`, `ClassTier`), `src/models/character.ts` (`Character`, `CharacterRole`, `CharacterStatus`, `RecruitmentSource`, `DeathRecord`) — **include `role: CharacterRole` and `deathRecord: DeathRecord | null` on `Character`; `CharacterStatus = 'active' | 'dead'` only (no `incapacitated`)**, `src/models/status-effect.ts` (`StatusEffect`), `src/models/hex.ts` (`HexCoord`, `HexTile`, `TerrainType`, `PoiTag`), `src/models/world-map.ts` (`WorldMap`), `src/models/town.ts` (`Town`, `HireableHero`), `src/models/enemy.ts` (`EnemyCamp`, `EnemyUnit`), `src/models/combat.ts` (`CombatEncounter`, `DiceRoll`), `src/models/recruitment.ts` (`RecruitmentEvent`), `src/models/save.ts` (`GameMode`, `SaveState`) — **include `deathHistory: DeathRecord[]` and `invalidated: boolean` on `SaveState`**, `src/models/meta-progression.ts` (`MetaProgressionModule`)
 - [ ] T011 Create `src/models/index.ts` barrel export for all model interfaces
 ### TDD — Write Tests First (must FAIL before T016)
 
 - [ ] T012 [P] Write unit tests for `src/utils/prng.ts` in `tests/unit/utils/prng.test.ts`: determinism (same seed → same sequence), uniform distribution spot-check, range bounds.
 - [ ] T013 [P] Write unit tests for `src/utils/dice.ts` in `tests/unit/utils/dice.test.ts`: notation parsing, modifier arithmetic, crit/fumble detection, reproducibility with fixed seed.
 - [ ] T014 [P] Write unit tests for `src/utils/noise.ts` in `tests/unit/utils/noise.test.ts`: seeded determinism, output range 0–1.
-- [ ] T015 [P] Write unit tests for Zod schemas in `tests/unit/schemas/`: `hex.test.ts` (invariant `q+r+s !== 0` must fail parse, valid coord passes); `save.test.ts` (valid `SaveState` round-trip passes); `character.test.ts`; `world-map.test.ts`.
+- [ ] T015 [P] Write unit tests for Zod schemas in `tests/unit/schemas/`: `hex.test.ts` (invariant `q+r+s !== 0` must fail parse, valid coord passes); `save.test.ts` (valid `SaveState` round-trip passes — **must assert `deathHistory: []` and `invalidated: false` are present on fresh state**); `character.test.ts` (**must assert `role` is one of `'pc'|'escort'|'adventurer'`; reject unknown role; accept `deathRecord: null` and `deathRecord: { coord, turn }`**); `world-map.test.ts`.
 
 ### Implementation
 
 - [ ] T016 [P] Implement `src/utils/prng.ts`: seedable xoshiro128** PRNG class; `constructor(seed: string)`, `next(): number` (0–1), `nextInt(min, max): number`. Pure — no Phaser dependency.
 - [ ] T017 [P] Implement `src/utils/dice.ts`: `DiceRoller` class; `roll(notation: string, prng: PRNG): DiceRoll` (parses "2d6+3" etc.), returns `{ dice, modifier, total, isCritical, isFumble }`. Pure.
 - [ ] T018 [P] Implement `src/utils/noise.ts`: thin wrapper over `simplex-noise`; exports `createNoise2D(seed: string): (x: number, y: number) => number` returning normalised 0–1 values.
-- [ ] T019 [P] Write Zod schemas in `src/schemas/` mirroring each model: `src/schemas/save.schema.ts` (full `SaveState` graph), `src/schemas/hex.schema.ts` (`HexCoord` with `.refine(c => c.q + c.r + c.s === 0)`), `src/schemas/character.schema.ts`, `src/schemas/world-map.schema.ts`. Export `SaveStateSchema` as root parse entry.
+- [ ] T019 [P] Write Zod schemas in `src/schemas/` mirroring each model: `src/schemas/save.schema.ts` (full `SaveState` graph — **must include `deathHistory: z.array(DeathRecordSchema)` and `invalidated: z.boolean()`**), `src/schemas/hex.schema.ts` (`HexCoord` with `.refine(c => c.q + c.r + c.s === 0)`), `src/schemas/character.schema.ts` (**`CharacterRoleSchema = z.enum(['pc','escort','adventurer'])`, `CharacterStatusSchema = z.enum(['active','dead'])`, `DeathRecordSchema`, `role` and `deathRecord` fields required on `CharacterSchema`**), `src/schemas/world-map.schema.ts`. Export `SaveStateSchema` as root parse entry.
 
 **Checkpoint**: `npm run test` passes all unit tests for utilities and schemas. All model files compile without errors.
 
@@ -83,7 +83,7 @@
 - [ ] T031 [US1] Create `src/game/scenes/Boot.ts` Phaser scene: registers all asset keys for tilesets and character portraits (placeholder 32×32 colored tiles acceptable for v1).
 - [ ] T032 [US1] Create `src/game/scenes/Preloader.ts` Phaser scene: loads all assets registered in Boot, shows progress bar using a Tailwind-styled HTML overlay (`pointer-events-none`).
 - [ ] T033 [US1] Create `src/game/scenes/MainMenu.ts` Phaser scene: "New Game" button → mode selection (Casual / Roguelike) → emits `game:start` with chosen `GameMode`. Mode label persisted in scene registry.
-- [ ] T034 [US1] Create `src/game/scenes/WorldMap.ts` Phaser scene: on `game:start`, calls `generateMap(seed, 40, 30)`, creates `HexGridModule`, renders hex tilemap via Phaser `TilemapLayer` (staggered hex or manual tile rendering), places starting party of 2 characters at `playerStartCoord`. Handles tile click → `findPath` → `moveOccupant` → tween character sprite.
+- [ ] T034 [US1] Create `src/game/scenes/WorldMap.ts` Phaser scene: on `game:start`, calls `generateMap(seed, 40, 30)`, creates `HexGridModule`, renders hex tilemap via Phaser `TilemapLayer` (staggered hex or manual tile rendering). Constructs the starting party: exactly 1 **PC** (player-chosen class from mode-select screen, `role: 'pc'`, `recruitmentSource: 'starting'`) and 1 **Escort** (pre-authored template from `src/data/escort.ts`, `role: 'escort'`, `recruitmentSource: 'starting'`). Both characters placed at `playerStartCoord`. Handles tile click → `findPath` → `moveOccupant` → tween character sprite.
 - [ ] T035 [US1] Create `src/game/ui/StatPanel.ts`: Tailwind HTML overlay (`pointer-events-none` except panel itself); renders selected `Character` name, class, level, HP bar, and `Attributes` grid. Subscribes to `character:selected` event.
 - [ ] T036 [US1] Wire `src/game/main.ts` Phaser `Game` config: register Boot → Preloader → MainMenu → WorldMap scene pipeline. Set `type: Phaser.AUTO`, `parent: 'game-container'`, pointered input enabled.
 
@@ -101,7 +101,7 @@
 
 - [ ] T037 [P] [US2] Write unit tests for `CombatModule` phase management in `tests/unit/combat/phase.test.ts`: `startPlayerPhase()` resets `actedThisPhase` for all player characters, `endPlayerPhase()` transitions to enemy phase, all enemies act before `startPlayerPhase()` again.
 - [ ] T038 [P] [US2] Write unit tests for `CombatModule` dice resolution in `tests/unit/combat/dice-resolution.test.ts`: attack roll against AC, damage roll, crit detection (natural 20), fumble detection (natural 1), HP mutation.
-- [ ] T039 [P] [US2] Write unit tests for `CombatModule` mode rules in `tests/unit/combat/mode-rules.test.ts`: Casual → character status becomes `incapacitated` at 0 HP; Roguelike → status becomes `dead` and is removed from roster. **Scope: pure-function behavior of `ModeRules.ts` only. Party-wide integration and `runEnded` flag coverage belongs in T071.**
+- [ ] T039 [P] [US2] Write unit tests for `CombatModule` mode rules in `tests/unit/combat/mode-rules.test.ts`: Both Casual and Roguelike → character `status` becomes `'dead'` at 0 HP (no `incapacitated` state). **Mode difference is save behavior only — not character status.** Verify `applyDefeat(character, casualMode)` and `applyDefeat(character, roguelikeMode)` both return `status: 'dead'`. **Scope: pure-function behavior of `ModeRules.ts` only. PC/Escort run-end logic and `invalidated` flag coverage belongs in T071.**
 - [ ] T039a [P] [US2] Write unit tests for player input guard in `tests/unit/combat/player-input-guard.test.ts`: `getPlayerControllableUnits()` returns the full player roster during Player Phase; returns an empty array during Enemy Phase. Satisfies FR-004b.
 - [ ] T040 [P] [US2] Write Playwright e2e test `tests/e2e/combat.spec.ts`: load save state with party adjacent to enemy camp → move onto camp tile → assert combat UI visible → perform one attack → assert dice roll UI visible → assert HP changed.
 
@@ -110,7 +110,7 @@
 - [ ] T041 [US2] Implement `src/modules/combat/CombatState.ts`: manages `CombatEncounter` state; tracks `phase`, `activeUnit`, `log`. Provides `getValidMoveTargets()`, `getAttackTargets()`.
 - [ ] T042 [US2] Implement `src/modules/combat/DiceResolver.ts`: `resolveAttack(attacker, defender, prng): DiceRoll`; applies `hitBonus`, `defenseBonus`, crit/fumble logic; mutates HP on attacker/defender copies (no in-place mutation). **Attack formula**: roll `1d20`; hit if `roll + attacker.hitBonus >= 10 + defender.defenseBonus` (DC = 10 + defenseBonus); nat 20 → crit (double damage dice); nat 1 → fumble (miss). Damage on hit: `1d6 + attacker.hitBonus` (base; class-specific override future). `hitBonus` and `defenseBonus` derived from `data-model.md` formulas.
 - [ ] T043 [US2] Implement `src/modules/combat/PhaseManager.ts`: `startPlayerPhase()`, `endPlayerPhase()`, `runEnemyPhase(ai)`. `actedThisPhase` flag maintenance. Simple enemy AI: move toward nearest player, attack if in range. **Enemy units act in the order they appear in `encounter.enemyUnits[]`** (array index 0 first). If no player is in attack range after moving, the enemy waits (no further action that turn).
-- [ ] T044 [US2] Implement `src/modules/combat/ModeRules.ts`: `applyDefeat(character, mode): Character` — returns updated character with `status: 'incapacitated'` (Casual) or `status: 'dead'` (Roguelike). Pure function.
+- [ ] T044 [US2] Implement `src/modules/combat/ModeRules.ts`: `applyDefeat(character, mode): Character` — returns updated character with `status: 'dead'` in **both modes**. The mode distinction is purely in save behavior (reload allowed in Casual; save invalidated in Roguelike) — character status is always `'dead'` at 0 HP. Sets `deathRecord: { coord: character.currentCoord, turn: currentTurn }`. Pure function.
 - [ ] T045 [US2] Assemble `src/modules/combat/index.ts`: export `createCombatModule(encounter: CombatEncounter, mode: GameMode, prng: PRNG): CombatModule` satisfying `contracts/combat.contract.md`.
 - [ ] T046 [US2] Create `src/game/scenes/Combat.ts` Phaser scene: receives `CombatEncounter` via scene data; renders tactical hex grid (subset of world map); renders unit sprites; exposes player action UI (Move / Attack / Wait buttons); subscribes to `CombatModule` events to animate dice roll overlay and HP changes.
 - [ ] T047 [US2] Create `src/game/ui/DiceRollOverlay.ts`: Tailwind-styled HTML overlay; receives `DiceRoll`; displays individual dice values, modifier, total, crit/fumble badge. Auto-dismisses after 2 seconds or on click.
@@ -162,7 +162,7 @@
 
 ### Implementation
 
-- [ ] T063 [US4] Implement `src/modules/save/Serialiser.ts`: `serialise(state: GameState): SaveState` — assembles all modules' state into the `SaveState` shape; stamps `schemaVersion`.
+- [ ] T063 [US4] Implement `src/modules/save/Serialiser.ts`: `serialise(state: GameState): SaveState` — assembles all modules' state into the `SaveState` shape; stamps `schemaVersion`. **Must include `deathHistory: DeathRecord[]` (cumulative log of all fallen Adventurers, survives Casual reloads) and `invalidated: boolean` (defaults `false`; set `true` by `RunEndDetector` in Roguelike mode on PC/Escort death).**
 - [ ] T064 [US4] Implement `src/modules/save/Migrator.ts`: `migrate(raw: unknown, targetVersion: number): SaveState`  — applies ordered migration functions from `migrations/` subdirectory. Guard: if `raw.schemaVersion > targetVersion` throw `SaveVersionError`. **Missing version guard**: if `raw` has no `schemaVersion` field (or it is `undefined`/`null`), treat it as version `0` (pre-v1 baseline) and run all migrations from 0 upward.
 - [ ] T065 [US4] Implement `src/modules/save/IndexedDbStore.ts`: `save(state: SaveState): Promise<void>`, `load(slot: number): Promise<SaveState | null>`, `listSlots(): Promise<SlotMeta[]>` using `idb` wrapper. Database name `hex-crawl-v1`.
 - [ ] T066 [US4] Implement `src/modules/save/FileExporter.ts`: `exportToFile(state: SaveState): void` — JSON.stringify → Blob → `<a download>` click. `importFromFile(file: File): Promise<SaveState>` — FileReader → JSON.parse → `SaveStateSchema.safeParse()` → throw on failure.
@@ -177,24 +177,25 @@
 
 ## Phase 7: User Story 5 — Casual vs. Roguelike Mode Distinction (Priority: P5)
 
-**Goal**: Mode label always visible on HUD. Casual: revival on defeat, save-anywhere. Roguelike: permadeath, run ends when last character falls, auto-save only. Mode difference surfaced clearly throughout.
+**Goal**: Mode label always visible on HUD. Both modes: run ends immediately when the **PC or Escort dies**; all characters become `status: 'dead'` at 0 HP. Mode difference is save behavior only — Casual allows reloading any prior save (including to undo PC/Escort death); Roguelike permanently invalidates the save (`invalidated: true`) on PC/Escort death. Mode is clearly labeled throughout the UI.
 
-**Independent Test**: Start Casual run → kill last character → character is incapacitated, run continues. Start Roguelike run → kill last character → run-end screen appears. Mode label visible in both flows.
+**Independent Test**: Start Casual run → kill the **Escort** → run-end screen appears (mission failed). Reload save → Escort alive again (save-scumming permitted). Start Roguelike run → kill the **PC** → run-end screen appears AND save is marked invalidated (no reload path). Mode label visible in both flows.
 
 ### TDD — Write Tests First
 
-- [ ] T071 [P] [US5] Write unit tests for mode enforcement in `tests/unit/combat/mode-enforcement.test.ts`: Casual last-character-down → `status: 'incapacitated'`, party not empty; Roguelike last-character-down → `status: 'dead'`, party empty → `runEnded: true`. **Scope: integration-level — full party state → `RunEndDetector` → `runEnded` flag. Do NOT duplicate `ModeRules.ts` pure-function assertions already covered in T039.**
+- [ ] T071 [P] [US5] Write unit tests for mode enforcement in `tests/unit/combat/mode-enforcement.test.ts`: (a) PC dies in Casual → `checkRunEnd` returns `true`; (b) Escort dies in Casual → `checkRunEnd` returns `true`; (c) Adventurer dies in Casual → `checkRunEnd` returns `false`; (d) PC dies in Roguelike → `checkRunEnd` returns `true`; (e) Adventurer dies in Roguelike → `checkRunEnd` returns `false`. **All characters are `status: 'dead'` at 0 HP in both modes — no `incapacitated` assertions. Scope: integration-level — full party state → `RunEndDetector` → run-end result. Do NOT duplicate `ModeRules.ts` pure-function assertions covered in T039.**
 - [ ] T072 [P] [US5] Write Playwright e2e test `tests/e2e/mode-distinction.spec.ts`: verify "CASUAL" or "ROGUELIKE" label visible on HUD after new game; verify character defeat outcome differs per mode.
 
 ### Implementation
 
-- [ ] T073 [US5] Implement `src/modules/combat/RunEndDetector.ts`: `checkRunEnd(party: Character[], mode: GameMode): boolean` — Roguelike: all `dead`; Casual: never (always false). Pure function.
+- [ ] T073 [US5] Implement `src/modules/combat/RunEndDetector.ts`: `checkRunEnd(party: Character[]): boolean` — returns `true` if any character with `role === 'pc'` OR `role === 'escort'` has `status === 'dead'`. This applies in **both Casual and Roguelike modes** — mode does NOT change the run-end condition, only save behavior. Pure function. No `mode` parameter needed.
+- [ ] T073a [US5] Implement save invalidation in `src/modules/combat/RunEndDetector.ts`: `invalidateSave(saveState: SaveState, mode: GameMode): SaveState` — returns updated `SaveState` with `invalidated: true` if and only if `mode.type === 'roguelike'`. Called by `Combat.ts` after `checkRunEnd()` returns `true`. Pure function.
 - [ ] T074 [US5] Create `src/game/ui/ModeLabel.ts`: persistent HUD badge ("CASUAL" green / "ROGUELIKE" red); rendered as Tailwind HTML overlay; always `pointer-events-none`; mounted at game start and never removed.
-- [ ] T075 [US5] Create `src/game/scenes/RunEnd.ts` Phaser scene: shown when `RunEndDetector` returns true in Roguelike mode; displays run summary (turns survived, enemies defeated, party roster); "Return to Menu" button.
-- [ ] T076 [US5] Wire `Combat.ts` to call `checkRunEnd()` after each character defeat and launch `RunEnd` scene if true (Roguelike only).
+- [ ] T075 [US5] Create `src/game/scenes/RunEnd.ts` Phaser scene: shown when `RunEndDetector.checkRunEnd()` returns `true` in **either mode**; displays reason ("Journey Over" if PC died, "Mission Failed" if Escort died); shows run summary (turns survived, enemies defeated, party roster, `deathHistory`); "Return to Menu" button.
+- [ ] T076 [US5] Wire `Combat.ts` to call `checkRunEnd()` after each character's HP reaches 0; if `true`, call `invalidateSave()` to mark save state accordingly, then launch `RunEnd` scene. This applies in **both modes** — Casual players return to menu and may load a prior save from there; Roguelike players see no load option (save is `invalidated`).
 - [ ] T077 [US5] Enforce Casual save-anywhere vs. Roguelike auto-save-only in `WorldMap.ts`: gate manual save button visibility on `gameMode === 'casual'`.
 
-**Checkpoint**: US5 complete. Tests T071–T072 pass. Both mode paths verified in browser.
+**Checkpoint**: US5 complete. Tests T071–T072 pass. PC/Escort death triggers run-end screen in both modes. Roguelike save is invalidated; Casual players can reload from main menu.
 
 ---
 
@@ -210,7 +211,7 @@
 
 ### Implementation
 
-- [ ] T079 Implement `src/modules/recruitment/TownService.ts`: `getHirePool(town: Town): HireableHero[]`, `hireCharacter(hero: HireableHero, party: Character[]): Character[]` — validates party cap, converts template to full `Character`.
+- [ ] T079 Implement `src/modules/recruitment/TownService.ts`: `getHirePool(town: Town): HireableHero[]`, `hireCharacter(hero: HireableHero, party: Character[]): Character[]` — validates party cap, converts template to full `Character` with `role: 'adventurer'` and `recruitmentSource: 'hired'` (never `'starting'` — that is reserved for the PC and Escort created at run start in T034).
 - [ ] T080 Implement `src/modules/recruitment/EncounterTrigger.ts`: `rollRecruitmentEncounter(encounter: CombatEncounter, prng: PRNG): RecruitmentEvent | null` — rolls prng < 0.1; if triggered, selects a random ID from `encounter.friendlyNpcs` (`string[]`), resolves it to the full `EnemyUnit` via `encounter.units`, then constructs and returns the `RecruitmentEvent`.
 - [ ] T080a Implement friendly NPC AI in `src/modules/recruitment/FriendlyNpcAi.ts`: `takeTurn(npc: EnemyUnit, encounter: CombatEncounter, hexGrid: HexGridModule): void` — simple AI (move toward nearest enemy, attack if in range); NPC unit MUST be registered in `PhaseManager` as a third-party actor, excluded from `getPlayerControllableUnits()`. Satisfies FR-012c.
 - [ ] T081 Assemble `src/modules/recruitment/index.ts`: export `createRecruitmentModule(): RecruitmentModule` satisfying `contracts/recruitment.contract.md`.
@@ -320,8 +321,8 @@ Deliver a browser-runnable game where a player can:
 | Phase 4: US2 combat | T037–T049 (13 tasks) | US2 (P2) |
 | Phase 5: US3 progression | T050–T058 (9 tasks) | US3 (P3) |
 | Phase 6: US4 save | T059–T070 (12 tasks) | US4 (P4) |
-| Phase 7: US5 modes | T071–T077 (7 tasks) | US5 (P5) |
+| Phase 7: US5 modes | T071–T077 + T073a (8 tasks) | US5 (P5) |
 | Phase 8: Recruitment | T078–T083 (6 tasks) | cross-cutting |
 | Phase 9: Stub | T084–T085 (2 tasks) | — |
 | Phase 10: Polish | T086–T092 (7 tasks) | — |
-| **Total** | **92 tasks** | |
+| **Total** | **93 tasks** | |

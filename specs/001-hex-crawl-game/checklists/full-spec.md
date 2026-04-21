@@ -13,13 +13,13 @@
 
 - [ ] CHK001 — Are requirements defined for whether the map seed is visible to the player and shareable between players, or is seed usage purely internal? [Completeness, Spec §FR-001a, Gap]
 - [ ] CHK002 — Are density/distribution rules (how many towns, encounter zones, and POIs per map) specified, or is that left to implementation discretion? [Completeness, Spec §FR-001a, Gap]
-- [ ] CHK003 — Are character attribute ranges and initial values at character creation documented, or are STR/DEX/CON/INT/WIS/CHA only named without generation rules? [Completeness, Spec §FR-003, Key Entities – Character, Gap]
-- [ ] CHK004 — Are XP thresholds (amounts needed per level) and whether the curve is class-specific or universal documented in requirements? [Completeness, Spec §FR-006, Gap]
-- [ ] CHK005 — Are per-class growth rates (stat increases per level-up) specified with concrete values or ranges, or only noted as a Class entity field? [Completeness, Spec §FR-006, Key Entities – Class, Gap]
+- [X] CHK003 — Are character attribute ranges and initial values at character creation documented, or are STR/DEX/CON/INT/WIS/CHA only named without generation rules? [Completeness, Spec §FR-003, Key Entities – Character, Gap]
+- [X] CHK004 — Are XP thresholds (amounts needed per level) and whether the curve is class-specific or universal documented in requirements? [Completeness, Spec §FR-006, Gap]
+- [X] CHK005 — Are per-class growth rates (stat increases per level-up) specified with concrete values or ranges, or only noted as a Class entity field? [Completeness, Spec §FR-006, Key Entities – Class, Gap]
 - [ ] CHK006 — Are promotion thresholds (exact level or condition) specified beyond "at defined level thresholds"? [Completeness, Spec §FR-007, Ambiguity]
 - [ ] CHK007 — Are the minimum two class-evolution paths named or described, or is only the count constraint documented? [Completeness, Spec §FR-007, Gap]
-- [ ] CHK008 — Are requirements defined for what constitutes full party defeat in Casual mode — is "last character incapacitated" a run-ending condition or does recovery apply? [Completeness, Spec §FR-013, Gap]
-- [ ] CHK009 — Is the Casual-mode recovery mechanic specified — how does an incapacitated character return to the active roster and under what conditions? [Completeness, Spec §FR-013, Gap]
+- [X] CHK008 — Are requirements defined for what constitutes full party defeat in Casual mode — is "last character incapacitated" a run-ending condition or does recovery apply? [Completeness, Spec §FR-013, Gap]
+- [X] CHK009 — Is the Casual-mode recovery mechanic specified — how does an incapacitated character return to the active roster and under what conditions? [Completeness, Spec §FR-013, Gap]
 - [ ] CHK010 — Are all terrain types fully enumerated with their passability rules and movement costs, or are terrain types only referenced by example? [Completeness, Spec §Key Entities – HexTile, Gap]
 - [ ] CHK011 — Are requirements defined for the main menu structure and all navigable flows beyond mode select and load game? [Completeness, Gap]
 - [ ] CHK012 — Are town interaction requirements specified beyond "level 1 heroes available for hire" — what is shown, how is hiring confirmed, and what costs are involved? [Completeness, Spec §FR-012a, Gap]
@@ -42,7 +42,7 @@
 - [X] CHK024 — Are file format, naming convention, and version stamp specified for exported save files (FR-010) — or is "downloadable file" the only constraint? [Clarity, Spec §FR-010, Ambiguity]
 - [ ] CHK025 — Is "100% of game state" (SC-004) defined with a concrete list of fields that must round-trip through export/import? [Clarity, Spec §SC-004, Ambiguity]
 - [ ] CHK026 — Is the start event for the "under 3 minutes" success criterion (SC-001) defined — browser tab open, first click, or game fully loaded? [Clarity, Spec §SC-001, Ambiguity]
-- [ ] CHK027 — Are the mechanical impacts of core attributes (STR, DEX, CON, etc.) on dice roll calculations documented anywhere in the spec or contracts? [Clarity, Spec §FR-005, Key Entities – Character, Gap]
+- [X] CHK027 — Are the mechanical impacts of core attributes (STR, DEX, CON, etc.) on dice roll calculations documented anywhere in the spec or contracts? [Clarity, Spec §FR-005, Key Entities – Character, Gap]
 
 ---
 
@@ -78,7 +78,7 @@
 - [ ] CHK045 — Are requirements defined for "undo move" — can the player reverse a character's movement after initiating it but before committing an action? [Coverage, Gap]
 - [ ] CHK046 — Are requirements defined for the end-of-combat resolution screen — what summary information (XP earned, casualties, loot) is shown before returning to the world map? [Coverage, Gap]
 - [ ] CHK047 — Are requirements specified for world-map state after combat resolves — is the enemy tile cleared, replaced by a different POI type, or left permanently empty? [Coverage, Gap]
-- [ ] CHK048 — Are world-map navigation requirements specified — is it click-to-move adjacency, path-planning, or free roam, and is fog-of-war part of the design? [Coverage, Spec §FR-001, Gap]
+- [X] CHK048 — Are world-map navigation requirements specified — is it click-to-move adjacency, path-planning, or free roam, and is fog-of-war part of the design? [Coverage, Spec §FR-001, Gap]
 
 ---
 
@@ -99,7 +99,7 @@
 - [ ] CHK056 — Are accessibility requirements (keyboard-only navigation, screen reader support, colorblind palette) specified for v1, even if explicitly deferred? [NFR, Gap]
 - [ ] CHK057 — Are requirements defined for game startup time from browser tab open to main menu interactive — is there an acceptable upper bound? [NFR, Spec §SC-001, Gap]
 - [ ] CHK058 — Are IndexedDB storage size estimates or per-save-slot size limits documented to bound the storage footprint? [NFR, Spec §Assumptions, Gap]
-- [ ] CHK059 — Are supported browsers and minimum browser versions specified, or is "modern browser" left undefined? [NFR, Spec §Assumptions, Gap]
+- [X] CHK059 — Are supported browsers and minimum browser versions specified, or is "modern browser" left undefined? [NFR, Spec §Assumptions, Gap]
 - [ ] CHK060 — Are security requirements defined for imported save files — is Zod parse sufficient, or are requirements needed for malformed/malicious payload handling? [NFR, Gap]
 - [ ] CHK061 — Are performance requirements defined for procedural map generation time — how long is acceptable and does it count within the SC-001 "under 3 minutes" window? [NFR, Spec §SC-001, FR-001, Gap]
 - [ ] CHK062 — Are performance requirements specified for enemy AI turn resolution — is there a ceiling on how long the AI may compute before the result is surfaced to the player? [NFR, Gap]
@@ -110,6 +110,6 @@
 
 - [ ] CHK063 — Is the "mobile/touch out of scope" assumption reflected with explicit exclusion language in any FR, or could an FR inadvertently imply responsive/touch UI? [Assumption, Spec §Assumptions]
 - [X] CHK064 — Is the "audio is a stretch goal" stance consistently applied across all FRs — do any FRs or success criteria implicitly depend on audio for UX feedback that would fail silently without it? [Assumption, Spec §FR-016, Gap]
-- [ ] CHK065 — Is the composable `MetaProgressionModule` interface requirement (Constitution Principle IV) expressed with a concrete contract stub, or only as a narrative assumption? [Dependency, Spec §Assumptions, Key Entities – MetaProgressionModule]
+- [X] CHK065 — Is the composable `MetaProgressionModule` interface requirement (Constitution Principle IV) expressed with a concrete contract stub, or only as a narrative assumption? [Dependency, Spec §Assumptions, Key Entities – MetaProgressionModule]
 - [ ] CHK066 — Is the PhaserJS 3 dependency pinned to a specific version, and are any known v3 API deprecation risks within v1 scope documented? [Dependency, Spec §Assumptions, Gap]
 - [X] CHK067 — Is the "no server dependency" assumption validated against all FRs — could any FR implicitly rely on network access (CDN fonts, external assets) that contradicts the local-first guarantee? [Assumption, Spec §FR-001, Spec §Assumptions]

@@ -48,7 +48,7 @@
 - [X] CHK020 — Does T043 specify what the simple enemy AI does when no player unit is within attack range — does it stop, wait, or cycle through a fallback behavior? [Completeness, tasks.md:T043, Gap]
 - [X] CHK021 — Does T046 (`Combat.ts` scene) specify what tile size and grid dimensions the tactical hex arena uses (e.g., same tile size as world map, different combat-specific grid)? [Clarity, tasks.md:T046, Ambiguity] — **Developer decision**: same tile size as world map; tactical view is a zoomed-in subset.
 - [X] CHK022 — Does T047 (`DiceRollOverlay.ts`) specify the exact visual layout — which values appear on which lines, how crit/fumble badge is styled differently — or is layout left entirely to the developer's discretion? [Completeness, tasks.md:T047, Gap]
-- [X] CHK023 — Is the "combat ends when side is eliminated" condition specified in T041 or T045 — specifically, does "eliminated" mean all dead/incapacitated or all dead only (given Casual-mode incapacitation)? [Clarity, tasks.md:T041/T045, Ambiguity] — **Developer decision**: "eliminated" = all units at 0 HP (dead or incapacitated); `RunEndDetector` determines the downstream consequence per mode.
+- [ ] CHK023 — Is the "combat ends when side is eliminated" condition specified in T041 or T045 — specifically, does "eliminated" mean all dead/incapacitated or all dead only (given Casual-mode incapacitation)? [Clarity, tasks.md:T041/T045, Ambiguity] — **⚠️ STALE**: `CharacterStatus` no longer includes `incapacitated` (data-model.md updated in clarification session — status is now `'active' | 'dead'` only). Task T041/T045 still references old model. Must update task definition and developer decision.
 
 ---
 
@@ -72,7 +72,7 @@
 
 ## Task Completeness — Mode & Recruitment (Phases 7–8)
 
-- [X] CHK032 — Does T073 (`RunEndDetector.ts`) specify the exact condition for Casual mode — "party never ends in Casual" is a business rule; is this documented in the task or assumed from spec? [Clarity, tasks.md:T073]
+- [ ] CHK032 — Does T073 (`RunEndDetector.ts`) specify the exact condition for Casual mode — "party never ends in Casual" is a business rule; is this documented in the task or assumed from spec? [Clarity, tasks.md:T073] — **⚠️ STALE**: T073 currently says "Casual: never (always false)" but spec clarification (FR-013/FR-014) now states that **both Casual and Roguelike end the run when the PC or Escort dies**. The mode difference is only in save behavior. T073 logic and T071 test assertions must be updated.
 - [X] CHK033 — Does T078 (recruitment unit tests) specify what constitutes a "valid" rollRecruitmentEncounter output in enough detail to write assertions — specifically, what fields of `RecruitmentEvent` are set? [Completeness, tasks.md:T078, Gap]
 - [X] CHK034 — Does T079 (`TownService.ts`) specify how a `HireableHero` template is converted to a full `Character` — are all `Character` fields generated, and is there a randomization step for attributes? [Completeness, tasks.md:T079, Gap] — **Developer decision**: `HireableHero.characterTemplate` is `Omit<Character, 'id'|'recruitmentSource'|'actedThisPhase'>` per data-model — developer generates those 3 fields; no randomization (template is pre-authored).
 - [X] CHK035 — Does T082 (`TownPanel.ts`) specify what "hire cost" means and where this value is sourced — is it a field on `HireableHero`, a flat fee, or calculated dynamically? [Completeness, tasks.md:T082, Gap]
@@ -111,3 +111,18 @@
 - [X] CHK048 — Is there one clearly identified "first task" with zero dependencies that a developer can start immediately — and is it T001, or is there a prerequisite (git branch, repo state) not captured in Phase 1? [Clarity, tasks.md:T001, Gap]
 - [X] CHK049 — Does the `quickstart.md` file contain a runnable scaffold command (e.g., `npm create phaser@latest` or `npx degit`), or does the developer need to look up the template scaffold method independently? [Completeness, quickstart.md]
 - [X] CHK050 — Is D1 (T035 creates StatPanel, T058 extends it) resolved in the task text — does T035 now indicate that event subscriptions are added in T058, so a developer does not close T035 prematurely? [Completeness, tasks.md:T035, D1]
+
+---
+
+## Party Role Model Gaps (Post-Clarification Session)
+
+*These items were added after the clarification session that introduced `CharacterRole` (`'pc' | 'escort' | 'adventurer'`), `DeathRecord`, `deathHistory[]`, and `invalidated` into the data model. Tasks.md was NOT updated in that session — these gaps must be resolved before implementation begins.*
+
+- [ ] CHK051 — Do T010/T018 (model files) specify that `Character` now requires `role: CharacterRole`, `deathRecord: DeathRecord | null` — or do the task files still reference the pre-clarification model shape? [Completeness, tasks.md:T010, data-model.md, Gap]
+- [ ] CHK052 — Is there a task (or sub-task of T010) that creates the `CharacterRole` type (`'pc' | 'escort' | 'adventurer'`) and `DeathRecord` interface — or are these missing from the task breakdown entirely? [Completeness, tasks.md:T010, Gap]
+- [ ] CHK053 — Does any task specify how the starting party (exactly 1 PC + 1 Escort) is constructed at new-game creation — is this covered in T033/T034 (MainMenu/WorldMap init) or is it a missing task? [Completeness, tasks.md:T033/T034, Gap]
+- [ ] CHK054 — Do T063 (`Serialiser.ts`) and T065 (`IndexedDbStore.ts`) tasks specify that `SaveState` now has `deathHistory: DeathRecord[]` and `invalidated: boolean` — are these new fields visible in the task descriptions? [Completeness, tasks.md:T063/T065, Gap]
+- [ ] CHK055 — Does T073 (`RunEndDetector.ts`) task text specify that run-end now triggers on **PC or Escort death** (via `character.role`) in **both modes** — not "Roguelike only" and not "all dead"? [Clarity, tasks.md:T073, Spec §FR-013/FR-014]
+- [ ] CHK056 — Does T039 (`mode-rules.test.ts`) test task assertion reflect that `CharacterStatus` no longer includes `'incapacitated'` — specifically, has the test expectation been updated from `status: 'incapacitated'` (Casual) to `status: 'dead'` (all modes)? [Consistency, tasks.md:T039, data-model.md]
+- [ ] CHK057 — Does T044 (`ModeRules.ts`) task specify the new death semantics — all characters set to `status: 'dead'`; mode difference is purely in save invalidation/reload behavior — or does it still reference the old `incapacitated` model? [Consistency, tasks.md:T044, Spec §FR-013]
+- [ ] CHK058 — Is there a task specifying when and how `save.invalidated = true` is set in Roguelike mode (e.g., in T073, T076, or a new task in Phase 7) — or is this field created in the data model but never set in the task plan? [Completeness, tasks.md §Phase 7, Gap]
