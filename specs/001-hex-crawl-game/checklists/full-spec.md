@@ -20,7 +20,7 @@
 - [ ] CHK007 — Are the minimum two class-evolution paths named or described, or is only the count constraint documented? [Completeness, Spec §FR-007, Gap]
 - [X] CHK008 — Are requirements defined for what constitutes full party defeat in Casual mode — is "last character incapacitated" a run-ending condition or does recovery apply? [Completeness, Spec §FR-013, Gap]
 - [X] CHK009 — Is the Casual-mode recovery mechanic specified — how does an incapacitated character return to the active roster and under what conditions? [Completeness, Spec §FR-013, Gap]
-- [ ] CHK010 — Are all terrain types fully enumerated with their passability rules and movement costs, or are terrain types only referenced by example? [Completeness, Spec §Key Entities – HexTile, Gap]
+- [X] CHK010 — Are all terrain types fully enumerated with their passability rules and movement costs, or are terrain types only referenced by example? [Completeness, Spec §Key Entities – HexTile, Gap]
 - [ ] CHK011 — Are requirements defined for the main menu structure and all navigable flows beyond mode select and load game? [Completeness, Gap]
 - [ ] CHK012 — Are town interaction requirements specified beyond "level 1 heroes available for hire" — what is shown, how is hiring confirmed, and what costs are involved? [Completeness, Spec §FR-012a, Gap]
 - [ ] CHK013 — Is the recruitment offer UI flow specified — exactly when the offer appears, what information is shown, and what player actions are available for the FR-012b encounter? [Completeness, Spec §FR-012b, Gap]
@@ -34,9 +34,9 @@
 
 - [ ] CHK017 — Is "accessible at any time outside combat" (FR-003) defined precisely — does it include town screens, world map, level-up events, and cutscene/splash states? [Clarity, Spec §FR-003, Ambiguity]
 - [ ] CHK018 — Is the visual indicator for a "marked exhausted" unit (FR-004a) specified — are there explicit requirements for how the player identifies which units have acted? [Clarity, Spec §FR-004a, Gap]
-- [ ] CHK019 — Is "higher-level friendly NPC" (FR-012b) quantified — are level ranges relative to the current party level defined? [Clarity, Spec §FR-012b, Ambiguity]
+- [X] CHK019 — Is "higher-level friendly NPC" (FR-012b) quantified — are level ranges relative to the current party level defined? [Clarity, Spec §FR-012b, Ambiguity]
 - [ ] CHK020 — Is "trigger probability < 10%" (FR-012b) defined as per-encounter-tile-entry, per-run, or another unit — and is this threshold measurably testable? [Clarity, Spec §FR-012b, Measurability]
-- [ ] CHK021 — Is simultaneous last-character death in Roguelike mode covered — does FR-014 address whether a run ends when the final action kills all remaining characters at once? [Clarity, Spec §FR-014, Ambiguity]
+- [X] CHK021 — Is simultaneous last-character death in Roguelike mode covered — does FR-014 address whether a run ends when the final action kills all remaining characters at once? [Clarity, Spec §FR-014, Ambiguity]
 - [ ] CHK022 — Is "persistently displayed in the HUD" (FR-015) expressed with layout or position requirements, or is placement left entirely to implementation? [Clarity, Spec §FR-015, Gap]
 - [ ] CHK023 — Is "classic high fantasy tone" (FR-016) expressed with any measurable visual or UX criteria beyond aesthetic description? [Clarity, Spec §FR-016, Measurability]
 - [X] CHK024 — Are file format, naming convention, and version stamp specified for exported save files (FR-010) — or is "downloadable file" the only constraint? [Clarity, Spec §FR-010, Ambiguity]
@@ -62,7 +62,7 @@
 - [ ] CHK034 — US1-Scenario-2 ("map updates") — is this criterion measurable without specifying what visible feedback (animation, highlight, indicator) confirms a successful move? [Measurability, Spec §US1-Scenario-2]
 - [ ] CHK035 — US2-Scenario-2 states dice results are displayed "before damage is applied" — is the display duration, dismissal mechanism, or player acknowledgement step required? [Measurability, Spec §US2-Scenario-2]
 - [ ] CHK036 — SC-002 ("within 500 ms") — are the measurement start event (button press vs. animation start) and end event (UI drawn vs. value visible) explicitly defined? [Measurability, Spec §SC-002]
-- [ ] CHK037 — SC-005 ("stable 60 fps on a mid-range device") — is "mid-range device" expressed with concrete hardware benchmarks, or is this criterion untestable as written? [Measurability, Spec §SC-005]
+- [X] CHK037 — SC-005 ("stable 60 fps on a mid-range device") — is "mid-range device" expressed with concrete hardware benchmarks, or is this criterion untestable as written? [Measurability, Spec §SC-005]
 - [ ] CHK038 — US5-Scenario-3 states mode is "always visible" — are the exceptions to "always" (loading screens, splash, main menu) documented to bound the requirement? [Measurability, Spec §US5-Scenario-3, FR-015]
 - [ ] CHK039 — SC-007 ("100% of stat values and dice components visible") — is the mechanism (always rendered vs. accessible on demand) consistently specified across all game states? [Measurability, Spec §SC-007, FR-003, FR-005]
 
@@ -71,13 +71,13 @@
 ## Scenario Coverage
 
 - [ ] CHK040 — Are requirements defined for the new-game onboarding flow — is there a tutorial, mode explanation, or introductory narrative, and can it be skipped? [Coverage, Gap]
-- [ ] CHK041 — Are requirements defined for the failed recruitment scenario (NPC dies before player wins) — what feedback is given and does the encounter resolve differently? [Coverage, Spec §Edge Cases, FR-012b]
+- [X] CHK041 — Are requirements defined for the failed recruitment scenario (NPC dies before player wins) — what feedback is given and does the encounter resolve differently? [Coverage, Spec §Edge Cases, FR-012b]
 - [ ] CHK042 — Are requirements defined for combat timeout or stalemate — is there a mechanism preventing infinite combat if neither side can deal lethal damage? [Coverage, Gap]
-- [ ] CHK043 — Is the full Roguelike run-end flow specified — what screens are shown after permadeath, what run summary is displayed, and how the player returns to the main menu? [Coverage, Gap]
-- [ ] CHK044 — Are multi-unit movement ordering requirements defined in the Player Phase — can the player move units in any order before acting, or must move + action complete per unit? [Coverage, Spec §FR-004a, Ambiguity]
-- [ ] CHK045 — Are requirements defined for "undo move" — can the player reverse a character's movement after initiating it but before committing an action? [Coverage, Gap]
-- [ ] CHK046 — Are requirements defined for the end-of-combat resolution screen — what summary information (XP earned, casualties, loot) is shown before returning to the world map? [Coverage, Gap]
-- [ ] CHK047 — Are requirements specified for world-map state after combat resolves — is the enemy tile cleared, replaced by a different POI type, or left permanently empty? [Coverage, Gap]
+- [X] CHK043 — Is the full Roguelike run-end flow specified — what screens are shown after permadeath, what run summary is displayed, and how the player returns to the main menu? [Coverage, Gap]
+- [X] CHK044 — Are multi-unit movement ordering requirements defined in the Player Phase — can the player move units in any order before acting, or must move + action complete per unit? [Coverage, Spec §FR-004a, Ambiguity]
+- [X] CHK045 — Are requirements defined for "undo move" — can the player reverse a character's movement after initiating it but before committing an action? [Coverage, Gap]
+- [X] CHK046 — Are requirements specified for end-of-combat resolution screen — what summary information (XP earned, casualties, loot) is shown before returning to the world map? [Coverage, Gap]
+- [X] CHK047 — Are requirements specified for world-map state after combat resolves — is the enemy tile cleared, replaced by a different POI type, or left permanently empty? [Coverage, Gap]
 - [X] CHK048 — Are world-map navigation requirements specified — is it click-to-move adjacency, path-planning, or free roam, and is fog-of-war part of the design? [Coverage, Spec §FR-001, Gap]
 
 ---
@@ -85,12 +85,12 @@
 ## Edge Case Coverage
 
 - [ ] CHK049 — Is the browser storage quota exhaustion scenario (listed in Edge Cases) backed by any requirement in FR-008 specifying the error state and whether partial writes are rolled back? [Edge Case, Spec §Edge Cases, FR-008, Gap]
-- [ ] CHK050 — Is the "browser closed during save write" scenario (listed in Edge Cases) backed by any integrity-check or write-completion validation requirement in FR-009? [Edge Case, Spec §Edge Cases, FR-009, Gap]
+- [X] CHK050 — Is the "browser closed during save write" scenario (listed in Edge Cases) backed by any integrity-check or write-completion validation requirement in FR-009? [Edge Case, Spec §Edge Cases, FR-009, Gap]
 - [ ] CHK051 — Is the multi-occupant hex tile scenario (listed in Edge Cases) backed by a requirement defining whether simultaneous tile occupancy is permitted and what blocks movement? [Edge Case, Spec §Edge Cases, Key Entities – HexTile, Gap]
-- [ ] CHK052 — Are natural 1 / natural 20 equivalents (listed in Edge Cases) backed by any requirement in FR-005 specifying critical hit/miss rules and how they are displayed? [Edge Case, Spec §Edge Cases, FR-005, Gap]
-- [ ] CHK053 — Is reaching the 8-character party cap during a recruitment encounter (listed in Edge Cases) backed by a requirement specifying whether the encounter still fires and what message is shown? [Edge Case, Spec §Edge Cases, FR-012, Gap]
-- [ ] CHK054 — Is "town stock depleted" (listed in Edge Cases) backed by a requirement in FR-012a specifying restock behavior, minimum availability, or a notification message? [Edge Case, Spec §Edge Cases, FR-012a, Gap]
-- [ ] CHK055 — Is the incompatible save file version import scenario (listed in Edge Cases) backed by a requirement in FR-011 specifying the error message shown and whether partial recovery is attempted? [Edge Case, Spec §Edge Cases, FR-011, Gap]
+- [X] CHK052 — Are natural 1 / natural 20 equivalents (listed in Edge Cases) backed by any requirement in FR-005 specifying critical hit/miss rules and how they are displayed? [Edge Case, Spec §Edge Cases, FR-005, Gap]
+- [X] CHK053 — Is reaching the 8-character party cap during a recruitment encounter (listed in Edge Cases) backed by a requirement specifying whether the encounter still fires and what message is shown? [Edge Case, Spec §Edge Cases, FR-012, Gap]
+- [X] CHK054 — Is "town stock depleted" (listed in Edge Cases) backed by a requirement in FR-012a specifying restock behavior, minimum availability, or a notification message? [Edge Case, Spec §Edge Cases, FR-012a, Gap]
+- [X] CHK055 — Is the incompatible save file version import scenario (listed in Edge Cases) backed by a requirement in FR-011 specifying the error message shown and whether partial recovery is attempted? [Edge Case, Spec §Edge Cases, FR-011, Gap]
 
 ---
 
@@ -100,7 +100,7 @@
 - [ ] CHK057 — Are requirements defined for game startup time from browser tab open to main menu interactive — is there an acceptable upper bound? [NFR, Spec §SC-001, Gap]
 - [ ] CHK058 — Are IndexedDB storage size estimates or per-save-slot size limits documented to bound the storage footprint? [NFR, Spec §Assumptions, Gap]
 - [X] CHK059 — Are supported browsers and minimum browser versions specified, or is "modern browser" left undefined? [NFR, Spec §Assumptions, Gap]
-- [ ] CHK060 — Are security requirements defined for imported save files — is Zod parse sufficient, or are requirements needed for malformed/malicious payload handling? [NFR, Gap]
+- [X] CHK060 — Are security requirements defined for imported save files — is Zod parse sufficient, or are requirements needed for malformed/malicious payload handling? [NFR, Gap]
 - [ ] CHK061 — Are performance requirements defined for procedural map generation time — how long is acceptable and does it count within the SC-001 "under 3 minutes" window? [NFR, Spec §SC-001, FR-001, Gap]
 - [ ] CHK062 — Are performance requirements specified for enemy AI turn resolution — is there a ceiling on how long the AI may compute before the result is surfaced to the player? [NFR, Gap]
 

@@ -108,7 +108,7 @@
 ### Implementation
 
 - [ ] T041 [US2] Implement `src/modules/combat/CombatState.ts`: manages `CombatEncounter` state; tracks `phase`, `activeUnit`, `log`. Provides `getValidMoveTargets()`, `getAttackTargets()`. **Also provides `isCombatOver(): { over: boolean; winner: 'player' | 'enemy' | null }` — returns `over: true` when ALL units on one side have `status === 'dead'`; `winner` is `'player'` if all enemy units are dead, `'enemy'` if all PC/Escort/Adventurer units are dead. `'incapacitated'` no longer exists — `status === 'dead'` is the only terminal state.**
-- [ ] T042 [US2] Implement `src/modules/combat/DiceResolver.ts`: `resolveAttack(attacker, defender, prng): DiceRoll`; applies `hitBonus`, `defenseBonus`, crit/fumble logic; mutates HP on attacker/defender copies (no in-place mutation). **Attack formula**: roll `1d20`; hit if `roll + attacker.hitBonus >= 10 + defender.defenseBonus` (DC = 10 + defenseBonus); nat 20 → crit (double damage dice); nat 1 → fumble (miss). Damage on hit: `1d6 + attacker.hitBonus` (base; class-specific override future). `hitBonus` and `defenseBonus` derived from `data-model.md` formulas.
+- [ ] T042 [US2] Implement `src/modules/combat/DiceResolver.ts`: `resolveAttack(attacker, defender, prng): DiceRoll`; applies `hitBonus`, `defenseBonus`, crit/fumble logic; mutates HP on attacker/defender copies (no in-place mutation). **Attack formula**: roll `1d20`; hit if `roll + attacker.hitBonus >= 10 + defender.defenseBonus` (DC = 10 + defenseBonus); nat 20 → `isCritical: true` — double the damage dice (but AC check still applies — a nat 20 is NOT an auto-hit); nat 1 → `isFumble: true` — auto-miss regardless of modifiers, displayed as "Critical Miss" (placeholder for v2 fumble effects). Damage on hit: `1d6 + attacker.hitBonus` (base; class-specific override future). `hitBonus` and `defenseBonus` derived from `data-model.md` formulas.
 - [ ] T043 [US2] Implement `src/modules/combat/PhaseManager.ts`: `startPlayerPhase()`, `endPlayerPhase()`, `runEnemyPhase(ai)`. `actedThisPhase` flag maintenance. Simple enemy AI: move toward nearest player, attack if in range. **Enemy units act in the order they appear in `encounter.enemyUnits[]`** (array index 0 first). If no player is in attack range after moving, the enemy waits (no further action that turn).
 - [ ] T044 [US2] Implement `src/modules/combat/ModeRules.ts`: `applyDefeat(character: Character, mode: GameMode, coord: HexCoord, turn: number): Character` — returns updated character with `status: 'dead'` in **both modes**. The mode distinction is purely in save behavior (reload allowed in Casual; save invalidated in Roguelike) — character status is always `'dead'` at 0 HP. Sets `deathRecord: { coord, turn }`. **`coord` and `turn` are passed in by the caller (Combat scene) — not read from the character.** Pure function.
 - [ ] T045 [US2] Assemble `src/modules/combat/index.ts`: export `createCombatModule(encounter: CombatEncounter, mode: GameMode, prng: PRNG): CombatModule` satisfying `contracts/combat.contract.md`.
@@ -116,7 +116,7 @@
 - [ ] T046 [US2] Create `src/game/scenes/Combat.ts` Phaser scene: receives `CombatEncounter` via scene data; renders tactical hex grid (subset of world map); renders unit sprites; exposes player action UI (Move / Attack / Wait / **Use Item** buttons — Use Item calls `ItemService.useItem()` stub in v1, button is present but shows "No items" toast); subscribes to `CombatModule` events to animate dice roll overlay and HP changes.
 - [ ] T047 [US2] Create `src/game/ui/DiceRollOverlay.ts`: Tailwind-styled HTML overlay; receives `DiceRoll`; displays individual dice values, modifier, total, crit/fumble badge. Auto-dismisses after 2 seconds or on click.
 - [ ] T048 [US2] Create `src/game/ui/PhaseLabel.ts`: HUD element always visible in combat; shows "PLAYER PHASE" / "ENEMY PHASE" with appropriate color. Subscribes to phase change events.
-- [ ] T049 [US2] Wire `WorldMap.ts` to detect `EnemyCamp` tile entry and launch `Combat` scene with the encounter data; on combat scene close, mark camp `defeated: true` and return to world map.
+- [ ] T049 [US2] Wire `WorldMap.ts` to detect `EnemyCamp` tile entry and launch `Combat` scene with the encounter data. On player victory (and `checkRunEnd()` is `false`): launch `VictorySummary` scene; on its `map:clear-enemy-tile` event, clear the enemy tile (remove PoI tag, mark passable empty) and return to `WorldMap.ts`. If `checkRunEnd()` is `true`, launch `RunEnd` scene instead.
 
 **Checkpoint**: US2 complete. `npm run test` passes T037–T040. Full combat sequence works in browser.
 
@@ -142,6 +142,7 @@
 - [ ] T055 [US3] Create `src/game/ui/LevelUpOverlay.ts`: Tailwind modal overlay; shows stat diff (+STR, +DEX, etc.) on level-up; auto-dismisses after player clicks or 3 seconds.
 - [ ] T056 [US3] Create `src/game/ui/PromotionModal.ts`: Tailwind modal; renders 2+ `ClassDefinition` cards with name, tier, stat previews; waits for player selection; emits `character:promoted` event with chosen class.
 - [ ] T057 [US3] Wire level-up and promotion into `Combat.ts` post-combat XP award: call `ProgressionModule.awardXp()` for each surviving character via its public contract interface; show `LevelUpOverlay` for any that levelled, show `PromotionModal` for any that hit `promotionLevel`. `Combat.ts` MUST NOT import `ProgressionService` directly — use the module factory.
+- [ ] T057a [US3] Create `src/game/scenes/VictorySummary.ts` Phaser scene: shown after player wins combat (before returning to world map); displays enemies defeated, XP earned per character, any character deaths that occurred during the encounter, and a "Continue" button. On "Continue", emits `map:clear-enemy-tile` with the defeated encounter's `HexCoord`, then transitions to `WorldMap.ts`. This scene is NOT shown when `RunEndDetector.checkRunEnd()` is `true` (run-end uses `RunEnd.ts` instead).
 - [ ] T058 [US3] Update `StatPanel.ts` to re-render on `character:levelUp` and `character:promoted` events.
 
 **Checkpoint**: US3 complete. Tests T050–T051 pass. Level-up and promotion flows work in browser.
@@ -321,7 +322,7 @@ Deliver a browser-runnable game where a player can:
 | Phase 2: Foundational | T010–T019 (10 tasks) | — |
 | Phase 3: US1 hex map | T020–T036 (17 tasks) | US1 (P1) |
 | Phase 4: US2 combat | T037–T049 + T045a (14 tasks) | US2 (P2) |
-| Phase 5: US3 progression | T050–T058 (9 tasks) | US3 (P3) |
+| Phase 5: US3 progression | T050–T058 + T057a (10 tasks) | US3 (P3) |
 | Phase 6: US4 save | T059–T070 (12 tasks) | US4 (P4) |
 | Phase 7: US5 modes | T071–T077 + T073a (8 tasks) | US5 (P5) |
 | Phase 8: Recruitment | T078–T083 (6 tasks) | cross-cutting |
