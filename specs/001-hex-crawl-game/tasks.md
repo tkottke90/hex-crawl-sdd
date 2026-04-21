@@ -1,0 +1,327 @@
+# Tasks: Hex Crawl Game — Core Experience
+
+**Feature**: `001-hex-crawl-game` | **Date**: 2026-04-21  
+**Input**: [spec.md](spec.md) · [plan.md](plan.md) · [data-model.md](data-model.md) · [research.md](research.md) · [contracts/](contracts/)  
+**Tests**: TDD — per Constitution Principle II. All test tasks MUST fail before implementation begins (Red → Green → Refactor).
+
+---
+
+## Format: `[ID] [P?] [Story?] Description`
+
+- **[P]**: Can be worked in parallel with other [P] tasks in the same phase
+- **[US#]**: Belongs to a specific user story
+- Exact file paths in every task description
+
+---
+
+## Phase 1: Setup (Project Scaffold)
+
+**Purpose**: Bootstrap the Phaser + Vite + TypeScript + Tailwind v4 + Vitest + Playwright project.
+
+- [ ] T001 Scaffold project from `phaserjs/template-vite-ts` official template into repository root; verify `npm run dev` starts at `http://localhost:5173`
+- [ ] T002 [P] Add runtime dependencies: `phaser`, `idb`, `simplex-noise`, `zod` via `npm install`
+- [ ] T003 [P] Add dev dependencies: `vitest`, `@vitest/coverage-v8`, `playwright`, `@playwright/test`, `tailwindcss`, `@tailwindcss/vite` via `npm install -D`
+- [ ] T004 Configure `vite.config.ts`: add `@tailwindcss/vite` plugin, set `base: './'`, add `manualChunks: { phaser: ['phaser'] }` in `build.rollupOptions.output`
+- [ ] T005 Configure `tsconfig.json`: `strict: true`, `strictPropertyInitialization: false`, `target: "ES2022"`, `module: "ESNext"`, `moduleResolution: "bundler"`
+- [ ] T006 Create `src/style.css` with `@import "tailwindcss"` and import it from `src/main.ts`
+- [ ] T007 [P] Create Vitest config `vitest.config.ts`: `environment: 'jsdom'`, coverage via `@vitest/coverage-v8`, include `tests/unit/**`
+- [ ] T008 [P] Create Playwright config `playwright.config.ts`: `baseURL: 'http://localhost:5173'`, Chromium only for v1
+- [ ] T009 Create `src/main.ts` entry point that instantiates the Phaser `Game` object (config stubbed) and imports `./style.css`
+
+**Checkpoint**: `npm run dev` starts, `npm run test` runs (no tests yet, zero failures), Playwright config valid.
+
+---
+
+## Phase 2: Foundational (Shared Utilities & Models)
+
+**Purpose**: Utilities and TypeScript models that ALL user stories depend on. No story work begins until this phase is complete.
+
+**⚠️ CRITICAL**: This phase BLOCKS all user story phases.
+
+- [ ] T010 Create all TypeScript model interfaces from `data-model.md` in files under `src/models/`: `src/models/attributes.ts` (`Attributes`), `src/models/class.ts` (`ClassDefinition`, `ClassTier`), `src/models/character.ts` (`Character`, `CharacterStatus`, `RecruitmentSource`), `src/models/status-effect.ts` (`StatusEffect`), `src/models/hex.ts` (`HexCoord`, `HexTile`, `TerrainType`, `PoiTag`), `src/models/world-map.ts` (`WorldMap`), `src/models/town.ts` (`Town`, `HireableHero`), `src/models/enemy.ts` (`EnemyCamp`, `EnemyUnit`), `src/models/combat.ts` (`CombatEncounter`, `DiceRoll`), `src/models/recruitment.ts` (`RecruitmentEvent`), `src/models/save.ts` (`GameMode`, `SaveState`), `src/models/meta-progression.ts` (`MetaProgressionModule`)
+- [ ] T011 Create `src/models/index.ts` barrel export for all model interfaces
+### TDD — Write Tests First (must FAIL before T016)
+
+- [ ] T012 [P] Write unit tests for `src/utils/prng.ts` in `tests/unit/utils/prng.test.ts`: determinism (same seed → same sequence), uniform distribution spot-check, range bounds.
+- [ ] T013 [P] Write unit tests for `src/utils/dice.ts` in `tests/unit/utils/dice.test.ts`: notation parsing, modifier arithmetic, crit/fumble detection, reproducibility with fixed seed.
+- [ ] T014 [P] Write unit tests for `src/utils/noise.ts` in `tests/unit/utils/noise.test.ts`: seeded determinism, output range 0–1.
+- [ ] T015 [P] Write unit tests for Zod schemas in `tests/unit/schemas/`: `hex.test.ts` (invariant `q+r+s !== 0` must fail parse, valid coord passes); `save.test.ts` (valid `SaveState` round-trip passes); `character.test.ts`; `world-map.test.ts`.
+
+### Implementation
+
+- [ ] T016 [P] Implement `src/utils/prng.ts`: seedable xoshiro128** PRNG class; `constructor(seed: string)`, `next(): number` (0–1), `nextInt(min, max): number`. Pure — no Phaser dependency.
+- [ ] T017 [P] Implement `src/utils/dice.ts`: `DiceRoller` class; `roll(notation: string, prng: PRNG): DiceRoll` (parses "2d6+3" etc.), returns `{ dice, modifier, total, isCritical, isFumble }`. Pure.
+- [ ] T018 [P] Implement `src/utils/noise.ts`: thin wrapper over `simplex-noise`; exports `createNoise2D(seed: string): (x: number, y: number) => number` returning normalised 0–1 values.
+- [ ] T019 [P] Write Zod schemas in `src/schemas/` mirroring each model: `src/schemas/save.schema.ts` (full `SaveState` graph), `src/schemas/hex.schema.ts` (`HexCoord` with `.refine(c => c.q + c.r + c.s === 0)`), `src/schemas/character.schema.ts`, `src/schemas/world-map.schema.ts`. Export `SaveStateSchema` as root parse entry.
+
+**Checkpoint**: `npm run test` passes all unit tests for utilities and schemas. All model files compile without errors.
+
+---
+
+## Phase 3: User Story 1 — Start a New Game & Enter the World (Priority: P1) 🎯 MVP
+
+**Goal**: Player can open the game, choose a mode, see a procedurally generated hex map with their starting party of 2 characters, and move a character to an adjacent tile.
+
+**Independent Test**: `npm run dev` → Select New Game → Choose mode → Hex map renders → Click adjacent passable tile → Character moves. No combat, saves, or progression required.
+
+### TDD — Write Tests First (must FAIL before T030)
+
+- [ ] T020 [P] [US1] Write unit tests for `HexGridModule` coord math in `tests/unit/hex-grid/coords.test.ts`: `neighbors()` returns 6, `distance()` cube formula, `toPixel()`/`fromPixel()` round-trip, invariant assertion on construction.
+- [ ] T021 [P] [US1] Write unit tests for `HexGridModule` pathfinding in `tests/unit/hex-grid/pathfinding.test.ts`: `findPath()` returns shortest path, returns `null` for impassable, `reachableTiles()` respects moveCost budget.
+- [ ] T022 [P] [US1] Write unit tests for map generation in `tests/unit/hex-grid/map-gen.test.ts`: same seed → identical map, all tiles have valid `TerrainType`, `playerStartCoord` is passable, biome distribution spot-check.
+- [ ] T023 [P] [US1] Write Playwright e2e test for the new-game flow in `tests/e2e/new-game.spec.ts`: load page → click New Game → choose mode → assert canvas is visible → assert character HUD contains HP value.
+
+### Implementation
+
+- [ ] T024 [US1] Implement `src/modules/hex-grid/HexCoordUtils.ts`: `makeCoord(q,r): HexCoord` (asserts `q+r+s===0`), `neighbors()`, `distance()`, `toPixel()`, `fromPixel()`. Export from `src/modules/hex-grid/index.ts`.
+- [ ] T025 [US1] Implement `src/modules/hex-grid/MapGenerator.ts`: `generateMap(seed: string, width: number, height: number): WorldMap`. Two simplex-noise passes (elevation + moisture) → biome lookup → `HexTile[]`. Island edge shaping. Returns `WorldMap` with `playerStartCoord` on passable tile.
+- [ ] T026 [US1] Implement `src/modules/hex-grid/HexGridStore.ts`: in-memory `WorldMap` store; `getTile()`, `queryTiles()`, `moveOccupant()`, `exploreTile()`. Emits `tile:explored` and `occupant:moved` events via a simple event bus.
+- [ ] T027 [US1] Implement A* pathfinding in `src/modules/hex-grid/Pathfinder.ts`: `findPath(start, end, map): HexCoord[] | null`. Binary-heap priority queue, `cube_distance` heuristic, respects `passable` and `moveCost`.
+- [ ] T028 [US1] Implement `src/modules/hex-grid/ReachableTiles.ts`: BFS flood-fill `reachableTiles(origin, movePoints, map): HexTile[]`.
+- [ ] T029 [US1] Assemble `src/modules/hex-grid/index.ts`: export a factory `createHexGridModule(map: WorldMap): HexGridModule` satisfying the contract in `contracts/hex-grid.contract.md`.
+- [ ] T030 [US1] Create data `src/data/classes.ts`: define at least 4 base `ClassDefinition` objects (e.g. `fighter`, `rogue`, `mage`, `cleric`) with `growthRates`, `promotionLevel: 10`, `promotionPaths` pointing to promoted class IDs. Define 8 promoted classes.
+- [ ] T031 [US1] Create `src/game/scenes/Boot.ts` Phaser scene: registers all asset keys for tilesets and character portraits (placeholder 32×32 colored tiles acceptable for v1).
+- [ ] T032 [US1] Create `src/game/scenes/Preloader.ts` Phaser scene: loads all assets registered in Boot, shows progress bar using a Tailwind-styled HTML overlay (`pointer-events-none`).
+- [ ] T033 [US1] Create `src/game/scenes/MainMenu.ts` Phaser scene: "New Game" button → mode selection (Casual / Roguelike) → emits `game:start` with chosen `GameMode`. Mode label persisted in scene registry.
+- [ ] T034 [US1] Create `src/game/scenes/WorldMap.ts` Phaser scene: on `game:start`, calls `generateMap(seed, 40, 30)`, creates `HexGridModule`, renders hex tilemap via Phaser `TilemapLayer` (staggered hex or manual tile rendering), places starting party of 2 characters at `playerStartCoord`. Handles tile click → `findPath` → `moveOccupant` → tween character sprite.
+- [ ] T035 [US1] Create `src/game/ui/StatPanel.ts`: Tailwind HTML overlay (`pointer-events-none` except panel itself); renders selected `Character` name, class, level, HP bar, and `Attributes` grid. Subscribes to `character:selected` event.
+- [ ] T036 [US1] Wire `src/game/main.ts` Phaser `Game` config: register Boot → Preloader → MainMenu → WorldMap scene pipeline. Set `type: Phaser.AUTO`, `parent: 'game-container'`, pointered input enabled.
+
+**Checkpoint**: Player Story 1 fully functional. `npm run test` passes all T020–T023 tests. `npm run dev` → new game → hex map → character moves.
+
+---
+
+## Phase 4: User Story 2 — Tactical Combat Encounter (Priority: P2)
+
+**Goal**: Player enters a hex tile with an enemy camp; a tactical combat screen opens; turns proceed phase-by-phase (Player Phase then Enemy Phase); dice rolls are shown; HP updates; combat resolves.
+
+**Independent Test**: Trigger a scripted encounter (DEV shortcut key acceptable). Complete a full round. Verify: dice roll UI appears, HP decreases, turn phase label switches, combat ends when side is eliminated.
+
+### TDD — Write Tests First
+
+- [ ] T037 [P] [US2] Write unit tests for `CombatModule` phase management in `tests/unit/combat/phase.test.ts`: `startPlayerPhase()` resets `actedThisPhase` for all player characters, `endPlayerPhase()` transitions to enemy phase, all enemies act before `startPlayerPhase()` again.
+- [ ] T038 [P] [US2] Write unit tests for `CombatModule` dice resolution in `tests/unit/combat/dice-resolution.test.ts`: attack roll against AC, damage roll, crit detection (natural 20), fumble detection (natural 1), HP mutation.
+- [ ] T039 [P] [US2] Write unit tests for `CombatModule` mode rules in `tests/unit/combat/mode-rules.test.ts`: Casual → character status becomes `incapacitated` at 0 HP; Roguelike → status becomes `dead` and is removed from roster. **Scope: pure-function behavior of `ModeRules.ts` only. Party-wide integration and `runEnded` flag coverage belongs in T071.**
+- [ ] T039a [P] [US2] Write unit tests for player input guard in `tests/unit/combat/player-input-guard.test.ts`: `getPlayerControllableUnits()` returns the full player roster during Player Phase; returns an empty array during Enemy Phase. Satisfies FR-004b.
+- [ ] T040 [P] [US2] Write Playwright e2e test `tests/e2e/combat.spec.ts`: load save state with party adjacent to enemy camp → move onto camp tile → assert combat UI visible → perform one attack → assert dice roll UI visible → assert HP changed.
+
+### Implementation
+
+- [ ] T041 [US2] Implement `src/modules/combat/CombatState.ts`: manages `CombatEncounter` state; tracks `phase`, `activeUnit`, `log`. Provides `getValidMoveTargets()`, `getAttackTargets()`.
+- [ ] T042 [US2] Implement `src/modules/combat/DiceResolver.ts`: `resolveAttack(attacker, defender, prng): DiceRoll`; applies `hitBonus`, `defenseBonus`, crit/fumble logic; mutates HP on attacker/defender copies (no in-place mutation).
+- [ ] T043 [US2] Implement `src/modules/combat/PhaseManager.ts`: `startPlayerPhase()`, `endPlayerPhase()`, `runEnemyPhase(ai)`. `actedThisPhase` flag maintenance. Simple enemy AI: move toward nearest player, attack if in range.
+- [ ] T044 [US2] Implement `src/modules/combat/ModeRules.ts`: `applyDefeat(character, mode): Character` — returns updated character with `status: 'incapacitated'` (Casual) or `status: 'dead'` (Roguelike). Pure function.
+- [ ] T045 [US2] Assemble `src/modules/combat/index.ts`: export `createCombatModule(encounter: CombatEncounter, mode: GameMode, prng: PRNG): CombatModule` satisfying `contracts/combat.contract.md`.
+- [ ] T046 [US2] Create `src/game/scenes/Combat.ts` Phaser scene: receives `CombatEncounter` via scene data; renders tactical hex grid (subset of world map); renders unit sprites; exposes player action UI (Move / Attack / Wait buttons); subscribes to `CombatModule` events to animate dice roll overlay and HP changes.
+- [ ] T047 [US2] Create `src/game/ui/DiceRollOverlay.ts`: Tailwind-styled HTML overlay; receives `DiceRoll`; displays individual dice values, modifier, total, crit/fumble badge. Auto-dismisses after 2 seconds or on click.
+- [ ] T048 [US2] Create `src/game/ui/PhaseLabel.ts`: HUD element always visible in combat; shows "PLAYER PHASE" / "ENEMY PHASE" with appropriate color. Subscribes to phase change events.
+- [ ] T049 [US2] Wire `WorldMap.ts` to detect `EnemyCamp` tile entry and launch `Combat` scene with the encounter data; on combat scene close, mark camp `defeated: true` and return to world map.
+
+**Checkpoint**: US2 complete. `npm run test` passes T037–T040. Full combat sequence works in browser.
+
+---
+
+## Phase 5: User Story 3 — Character Progression & Class Evolution (Priority: P3)
+
+**Goal**: After combat XP award, characters level up with stat growth. At level 10, player chooses a promotion path. Stat block reflects changes.
+
+**Independent Test**: DEV shortcut grants 9999 XP to character. Verify: level-up fires, stats increase per growth rates, at level 10 promotion modal appears with 2+ options, selecting one updates class/portrait/stats.
+
+### TDD — Write Tests First
+
+- [ ] T050 [P] [US3] Write unit tests for XP/level-up in `tests/unit/progression/level-up.test.ts`: `awardXp()` triggers `levelUp` event at threshold; `applyLevelUp()` rolls growth rates per `ClassDefinition.growthRates`; maxHp recalculated.
+- [ ] T051 [P] [US3] Write unit tests for promotion in `tests/unit/progression/promotion.test.ts`: `getPromotionOptions()` returns correct class IDs at `promotionLevel`; `applyPromotion()` swaps classId, resets level to 1, applies base stat bonuses, clears promotionPaths.
+
+### Implementation
+
+- [ ] T052 [US3] Implement `src/modules/progression/ProgressionService.ts`: `awardXp(character, amount): Character` — increments XP, fires `character:levelUp` event when threshold reached. `applyLevelUp(character, classDef): Character` — rolls each stat growth rate (random < growthRate% → stat +1), recalculates `maxHp`. Pure — no `CombatModule` dependency.
+- [ ] T053 [US3] Implement `getPromotionOptions(character, classDefs): ClassDefinition[]` in `ProgressionService.ts`; returns promoted class options when `character.level === classDef.promotionLevel`.
+- [ ] T054 [US3] Implement `applyPromotion(character, promotedClassDef): Character` in `ProgressionService.ts`: swaps `classId`, resets `level` to 1, `xp` to 0, applies `promotedClassDef.baseStats` as additive bonuses, clears `promotionPaths`.
+- [ ] T054a [US3] Assemble `src/modules/progression/index.ts`: export `createProgressionModule(): ProgressionModule` satisfying `contracts/progression.contract.md`.
+- [ ] T055 [US3] Create `src/game/ui/LevelUpOverlay.ts`: Tailwind modal overlay; shows stat diff (+STR, +DEX, etc.) on level-up; auto-dismisses after player clicks or 3 seconds.
+- [ ] T056 [US3] Create `src/game/ui/PromotionModal.ts`: Tailwind modal; renders 2+ `ClassDefinition` cards with name, tier, stat previews; waits for player selection; emits `character:promoted` event with chosen class.
+- [ ] T057 [US3] Wire level-up and promotion into `Combat.ts` post-combat XP award: call `ProgressionModule.awardXp()` for each surviving character via its public contract interface; show `LevelUpOverlay` for any that levelled, show `PromotionModal` for any that hit `promotionLevel`. `Combat.ts` MUST NOT import `ProgressionService` directly — use the module factory.
+- [ ] T058 [US3] Update `StatPanel.ts` to re-render on `character:levelUp` and `character:promoted` events.
+
+**Checkpoint**: US3 complete. Tests T050–T051 pass. Level-up and promotion flows work in browser.
+
+---
+
+## Phase 6: User Story 4 — Save & Resume Game (Priority: P4)
+
+**Goal**: Player can save to IndexedDB, load back, export `.json` to device, and import from device. Roguelike mode auto-saves. Save schema validated by Zod on import.
+
+**Independent Test**: Save → close tab → reopen → Load → verify exact map position, party HP, mode restored. Export `.json` → re-import → same result.
+
+### TDD — Write Tests First
+
+- [ ] T059 [P] [US4] Write unit tests for `SaveModule` serialisation in `tests/unit/save/serialise.test.ts`: `serialise(gameState): SaveState` produces valid JSON; `SaveStateSchema.safeParse()` accepts it; version field present.
+- [ ] T060 [P] [US4] Write unit tests for `SaveModule` migration in `tests/unit/save/migration.test.ts`: `migrate(data, fromVersion, toVersion)` applies correct migration steps sequentially; unknown future version throws.
+- [ ] T061 [P] [US4] Write unit tests for `SaveModule` Zod import validation in `tests/unit/save/validation.test.ts`: valid save → passes; mangled `HexCoord` (invariant broken) → `safeParse` fails with descriptive error.
+- [ ] T062 [P] [US4] Write Playwright e2e test `tests/e2e/save-load.spec.ts`: start game → move character → save → reload page → load save → assert character is on correct tile.
+
+### Implementation
+
+- [ ] T063 [US4] Implement `src/modules/save/Serialiser.ts`: `serialise(state: GameState): SaveState` — assembles all modules' state into the `SaveState` shape; stamps `schemaVersion`.
+- [ ] T064 [US4] Implement `src/modules/save/Migrator.ts`: `migrate(raw: unknown, targetVersion: number): SaveState`  — applies ordered migration functions from `migrations/` subdirectory. Guard: if `raw.schemaVersion > targetVersion` throw `SaveVersionError`.
+- [ ] T065 [US4] Implement `src/modules/save/IndexedDbStore.ts`: `save(state: SaveState): Promise<void>`, `load(slot: number): Promise<SaveState | null>`, `listSlots(): Promise<SlotMeta[]>` using `idb` wrapper. Database name `hex-crawl-v1`.
+- [ ] T066 [US4] Implement `src/modules/save/FileExporter.ts`: `exportToFile(state: SaveState): void` — JSON.stringify → Blob → `<a download>` click. `importFromFile(file: File): Promise<SaveState>` — FileReader → JSON.parse → `SaveStateSchema.safeParse()` → throw on failure.
+- [ ] T067 [US4] Implement auto-save in `src/modules/save/AutoSave.ts`: `enableAutoSave(store, getState)` — subscribes to `phase:enemyPhaseEnd` and `occupant:moved` events (from `PhaseManager` and `HexGridModule` respectively); calls `store.save()` on each event only when `gameMode === 'roguelike'`. No timer/interval — event-driven only (FR-009).
+- [ ] T068 [US4] Assemble `src/modules/save/index.ts`: export `createSaveModule(): SaveModule` satisfying `contracts/save.contract.md`.
+- [ ] T069 [US4] Add Save / Load UI to `src/game/scenes/MainMenu.ts`: "Load Game" button opens slot picker from `IndexedDbStore.listSlots()`. "Import Save" triggers file input → `importFromFile()`.
+- [ ] T070 [US4] Add "Save Game" button to `WorldMap.ts` HUD (visible only outside combat, Casual mode); Roguelike mode shows auto-save indicator instead. "Export Save File" available in pause menu.
+
+**Checkpoint**: US4 complete. Tests T059–T062 pass. Full save/load/export/import cycle works.
+
+---
+
+## Phase 7: User Story 5 — Casual vs. Roguelike Mode Distinction (Priority: P5)
+
+**Goal**: Mode label always visible on HUD. Casual: revival on defeat, save-anywhere. Roguelike: permadeath, run ends when last character falls, auto-save only. Mode difference surfaced clearly throughout.
+
+**Independent Test**: Start Casual run → kill last character → character is incapacitated, run continues. Start Roguelike run → kill last character → run-end screen appears. Mode label visible in both flows.
+
+### TDD — Write Tests First
+
+- [ ] T071 [P] [US5] Write unit tests for mode enforcement in `tests/unit/combat/mode-enforcement.test.ts`: Casual last-character-down → `status: 'incapacitated'`, party not empty; Roguelike last-character-down → `status: 'dead'`, party empty → `runEnded: true`. **Scope: integration-level — full party state → `RunEndDetector` → `runEnded` flag. Do NOT duplicate `ModeRules.ts` pure-function assertions already covered in T039.**
+- [ ] T072 [P] [US5] Write Playwright e2e test `tests/e2e/mode-distinction.spec.ts`: verify "CASUAL" or "ROGUELIKE" label visible on HUD after new game; verify character defeat outcome differs per mode.
+
+### Implementation
+
+- [ ] T073 [US5] Implement `src/modules/combat/RunEndDetector.ts`: `checkRunEnd(party: Character[], mode: GameMode): boolean` — Roguelike: all `dead`; Casual: never (always false). Pure function.
+- [ ] T074 [US5] Create `src/game/ui/ModeLabel.ts`: persistent HUD badge ("CASUAL" green / "ROGUELIKE" red); rendered as Tailwind HTML overlay; always `pointer-events-none`; mounted at game start and never removed.
+- [ ] T075 [US5] Create `src/game/scenes/RunEnd.ts` Phaser scene: shown when `RunEndDetector` returns true in Roguelike mode; displays run summary (turns survived, enemies defeated, party roster); "Return to Menu" button.
+- [ ] T076 [US5] Wire `Combat.ts` to call `checkRunEnd()` after each character defeat and launch `RunEnd` scene if true (Roguelike only).
+- [ ] T077 [US5] Enforce Casual save-anywhere vs. Roguelike auto-save-only in `WorldMap.ts`: gate manual save button visibility on `gameMode === 'casual'`.
+
+**Checkpoint**: US5 complete. Tests T071–T072 pass. Both mode paths verified in browser.
+
+---
+
+## Phase 8: Recruitment (Cross-Cutting — supports US1 party growth)
+
+**Goal**: Player can hire characters at Towns (level 1, from hire pool). Rare mid-combat NPC rescue (<10% chance). Party grows from 2 to max 8.
+
+**Note**: Recruitment spans the world map (town visits, US1) and combat (rare rescue, US2) so is implemented after both are stable.
+
+### TDD — Write Tests First
+
+- [ ] T078 [P] Write unit tests for `RecruitmentModule` in `tests/unit/recruitment/recruitment.test.ts`: `getHirePool(town)` returns `hirePool`; `hireCharacter(hero, party)` adds to party if `party.length < 8`; `hireCharacter` throws if party full; `rollRecruitmentEncounter(combat, prng)` returns event <10% of the time.
+
+### Implementation
+
+- [ ] T079 Implement `src/modules/recruitment/TownService.ts`: `getHirePool(town: Town): HireableHero[]`, `hireCharacter(hero: HireableHero, party: Character[]): Character[]` — validates party cap, converts template to full `Character`.
+- [ ] T080 Implement `src/modules/recruitment/EncounterTrigger.ts`: `rollRecruitmentEncounter(encounter: CombatEncounter, prng: PRNG): RecruitmentEvent | null` — rolls prng < 0.1; if triggered, selects a random ID from `encounter.friendlyNpcs` (`string[]`), resolves it to the full `EnemyUnit` via `encounter.units`, then constructs and returns the `RecruitmentEvent`.
+- [ ] T080a Implement friendly NPC AI in `src/modules/recruitment/FriendlyNpcAi.ts`: `takeTurn(npc: EnemyUnit, encounter: CombatEncounter, hexGrid: HexGridModule): void` — simple AI (move toward nearest enemy, attack if in range); NPC unit MUST be registered in `PhaseManager` as a third-party actor, excluded from `getPlayerControllableUnits()`. Satisfies FR-012c.
+- [ ] T081 Assemble `src/modules/recruitment/index.ts`: export `createRecruitmentModule(): RecruitmentModule` satisfying `contracts/recruitment.contract.md`.
+- [ ] T082 Create `src/game/ui/TownPanel.ts`: Tailwind HTML overlay; renders `HireableHero[]` list with name, class, level, and hire cost; "Hire" button calls `hireCharacter()` and updates party HUD; disables hire button when `party.length >= 8` and shows "Party Full" label. (FR-012a)
+- [ ] T082a Wire `WorldMap.ts` to show `TownPanel` when player moves onto a town tile; dismiss panel on exit or hire.
+- [ ] T083 Wire `Combat.ts` to call `rollRecruitmentEncounter()` at combat start; if event fires, show recruitment offer overlay and add character to party on accept; register NPC with `FriendlyNpcAi` for that encounter's Enemy Phase.
+
+**Checkpoint**: Recruitment complete. Town hire and rare encounter rescue both work in browser.
+
+---
+
+## Phase 9: MetaProgressionModule Stub (Constitution Principle IV)
+
+**Goal**: Satisfy Principle IV — provide the extension point stub so future meta-progression can be added without architectural change.
+
+- [ ] T084 Implement `src/modules/meta-progression/index.ts`: export `createMetaProgressionModule(): MetaProgressionModule` returning `{ schemaVersion: 1 }`. No logic. Stub only.
+- [ ] T085 Include `MetaProgressionModule` instance in `SaveState` serialisation (`Serialiser.ts`) so the field is present in all saved files from day one.
+
+---
+
+## Phase 10: Polish & Cross-Cutting Concerns
+
+**Purpose**: Final wiring, UX completeness, and validation run.
+
+- [ ] T086 [P] Add error boundary to `FileExporter.importFromFile()`: if `SaveStateSchema.safeParse()` fails, display user-facing toast "Save file is incompatible or corrupted" via a Tailwind toast component (`src/game/ui/Toast.ts`).
+- [ ] T087 [P] Add storage-quota guard to `IndexedDbStore.save()`: catch `QuotaExceededError`, surface toast "Browser storage full — export your save file".
+- [ ] T088 [P] Add stacking guard to `HexGridStore.moveOccupant()`: reject move if `tile.occupants.length >= 8`; emit `move:rejected` event.
+- [ ] T089 [P] Validate all Phaser scenes clean up event listeners and module references in their `shutdown` lifecycle hook to prevent memory leaks across scene transitions.
+- [ ] T090 Run `quickstart.md` validation checklist end-to-end: scaffold → install → dev server → unit tests pass → e2e tests pass → production build succeeds (`npm run build`).
+- [ ] T091 [P] Verify `npm run build` produces a bundle with Phaser in its own chunk (`phaser.[hash].js`) and total initial JS < 500 KB (excluding Phaser chunk).
+- [ ] T092 [P] Manual smoke test matrix: Chrome, Firefox, Edge — new game → combat → level up → save → load → export → import → run end (Roguelike).
+- [ ] T093 [P] Write Playwright timing tests for success criteria: SC-001 — assert time from page load to first combat action input available is < 3 minutes (`tests/e2e/perf-sc001.spec.ts`); SC-002 — assert dice roll UI is visible within 500 ms of attack confirmation (`tests/e2e/perf-sc002.spec.ts`); SC-003 — assert save confirmation appears within 2 seconds of save trigger (`tests/e2e/perf-sc003.spec.ts`).
+- [ ] T094 [P] Create `src/data/palette.ts`: export `FANTASY_PALETTE` const with 8 named hex color values (earth tones, forest greens, stone greys, parchment). Add a comment block referencing FR-016 tone guidelines (medieval, pre-industrial, nature-focused). Import and use in `Boot.ts` for placeholder 32×32 colored tile generation until production art assets are provided.
+
+---
+
+## Dependencies & Execution Order
+
+### Phase Dependencies
+
+```
+Phase 1 (Setup)
+  └─► Phase 2 (Foundational) ─ BLOCKS ALL ─┐
+                                             ├─► Phase 3 (US1 — MVP) ──────────────────────────────►┐
+                                             ├─► Phase 3 complete ──► Phase 4 (US2) ────────────────►┤
+                                             └─► Phase 3+4 complete ► Phase 5 (US3)                  │
+                                                                     Phase 4 complete ► Phase 6 (US4) │
+                                                                     Phase 3+4 complete ► Phase 7 (US5)│
+                                                                     Phase 3+4 complete ► Phase 8 (Recruitment)
+                                                                     Phase 2 complete ► Phase 9 (Stub) │
+                                                                     All phases ──────────────────────► Phase 10 (Polish)
+```
+
+### Critical Path (MVP)
+
+**Phase 1 → Phase 2 → Phase 3** — delivers a playable game. Everything after extends it.
+
+### Parallel Opportunities Per Phase
+
+| Phase | Parallelizable task groups |
+|---|---|
+| Phase 1 | T002+T003 together; T007+T008 together |
+| Phase 2 | T013+T014+T015 together; T016+T017+T018+T019 together; T012 alongside models |
+| Phase 3 | T020+T021+T022+T023 together (test writing); T024+T025 together (independent modules) |
+| Phase 4 | T037+T038+T039+T040 together; T041+T042+T043+T044 together |
+| Phase 5 | T050+T051 together |
+| Phase 6 | T059+T060+T061+T062 together; T063+T064+T065+T066+T067 together |
+| Phase 7 | T071+T072 together |
+| Phase 8 | T078 alone (other tasks sequential) |
+| Phase 10 | T086+T087+T088+T089+T091+T092 together |
+
+---
+
+## Implementation Strategy
+
+### MVP Scope (Phase 1 → 3 only)
+
+Deliver a browser-runnable game where a player can:
+1. Open the game and choose a mode
+2. Navigate a procedurally generated hex map with a party of 2 characters
+3. View stat blocks
+
+**This alone satisfies Constitution Principle I.**
+
+### Incremental Delivery
+
+| Milestone | Phases | Delivers |
+|---|---|---|
+| MVP | 1–3 | Playable hex map + movement |
+| Combat | + 4 | Full tactical encounter loop |
+| Progression | + 5 | Levelling + class evolution |
+| Persistence | + 6 | Save / load / export / import |
+| Mode depth | + 7 | Full Casual vs. Roguelike distinction |
+| Party growth | + 8 | Recruitment at towns + rare encounters |
+| Architecture | + 9 | MetaProgressionModule stub |
+| Shippable | + 10 | Polish + validated |
+
+---
+
+## Task Count Summary
+
+| Phase | Tasks | User Story |
+|---|---|---|
+| Phase 1: Setup | T001–T009 (9 tasks) | — |
+| Phase 2: Foundational | T010–T019 (10 tasks) | — |
+| Phase 3: US1 hex map | T020–T036 (17 tasks) | US1 (P1) |
+| Phase 4: US2 combat | T037–T049 (13 tasks) | US2 (P2) |
+| Phase 5: US3 progression | T050–T058 (9 tasks) | US3 (P3) |
+| Phase 6: US4 save | T059–T070 (12 tasks) | US4 (P4) |
+| Phase 7: US5 modes | T071–T077 (7 tasks) | US5 (P5) |
+| Phase 8: Recruitment | T078–T083 (6 tasks) | cross-cutting |
+| Phase 9: Stub | T084–T085 (2 tasks) | — |
+| Phase 10: Polish | T086–T092 (7 tasks) | — |
+| **Total** | **92 tasks** | |

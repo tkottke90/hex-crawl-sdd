@@ -1,7 +1,7 @@
 <!--
   SYNC IMPACT REPORT
-  Version change: (unversioned) → 1.0.0
-  Added sections: Core Principles (I–III), Tech Stack, Development Workflow, Governance
+  Version change: (unversioned) → 1.1.0
+  Added sections: Core Principles (I–IV), Tech Stack, Development Workflow, Governance
   Removed sections: N/A (initial fill)
   Templates checked:
     ✅ plan-template.md — Constitution Check section present; no updates needed
@@ -38,6 +38,13 @@ with explicit, stable interfaces between them. No module may directly reference 
 internals of another. This enables independent testing of each concern and makes
 future renderer or input swaps non-breaking.
 
+### IV. Composability & Reusability
+
+All game features MUST be implemented as composable modules that can be added, removed, or replaced without affecting the core game loop. This allows for flexible iteration and
+future expansion without refactoring the entire codebase. Each module should have a clear API and be decoupled from other modules.
+
+Likewise, reuseable utility systems should be designed such that they are ignorant to the larger nuance of where they are used.
+
 ## Tech Stack
 
 - **Language**: TypeScript (strict mode enabled)
@@ -52,7 +59,7 @@ future renderer or input swaps non-breaking.
 - All work MUST happen on a feature branch following the naming convention
   `###-short-description` (sequential numbering).
 - A Constitution Check MUST be performed in every plan.md before implementation begins,
-  verifying the planned approach complies with Principles I–III.
+  verifying the planned approach complies with Principles I–IV.
 - PRs MUST NOT be merged if any test is failing or if the game is left in a
   non-playable state.
 - Complexity exceeding a single user story MUST be split into additional stories
@@ -70,4 +77,4 @@ This constitution supersedes all other development practices. Amendments require
 
 All plan reviews MUST include a Constitution Check verifying compliance.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-21 | **Last Amended**: 2026-04-21
+**Version**: 1.1.0 | **Ratified**: 2026-04-21 | **Last Amended**: 2026-04-21
