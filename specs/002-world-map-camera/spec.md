@@ -81,10 +81,10 @@ re-center button (bottom-right) triggers an ease-out tween back to the active ch
 3. **Given** the camera has been manually panned away from the active character, **When** the
    player moves the active character to a new tile, **Then** the camera transitions back to
    follow the character (follow behavior resumes).
-5. **Given** the camera has been manually panned away from the active character, **When** the
+4. **Given** the camera has been manually panned away from the active character, **When** the
    player taps the re-center button in the bottom-right corner, **Then** the camera performs
    an ease-out tween to center on the active character's tile and follow mode resumes.
-4. **Given** two conflicting pan keys are held simultaneously (e.g. Left + Right), **When** both
+5. **Given** two conflicting pan keys are held simultaneously (e.g. Left + Right), **When** both
    are pressed, **Then** the horizontal motion cancels out and the camera does not move on that
    axis.
 
@@ -95,7 +95,9 @@ re-center button (bottom-right) triggers an ease-out tween back to the active ch
 - What happens when the active character's tile is at the edge of the map and cannot be fully
   centered? → The camera halts at the map boundary; it does not scroll beyond the renderable area.
 - What happens if a move tween completes while a manual pan is in progress? → Manual pan input
-  takes priority; the follow tween does not override an active manual pan.
+  takes priority; the follow tween does not override an active manual pan. This applies to
+  passively completing tweens only — a new `moveOccupant()` call always triggers `followTo()`
+  per FR-009 regardless of whether the camera is currently being panned.
 - What happens when the active character changes mid-tween (e.g. the previous character's move
   animation finishes and the next character is highlighted)? → The camera redirects its tween
   destination to the newly active character without interrupting smoothness.

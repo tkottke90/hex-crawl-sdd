@@ -144,6 +144,16 @@ export interface CameraKeys {
    - Guard: `centerOn` is called only after `buildParty()` completes and `selectedChar` is
      non-null; if null (should not occur under normal flow), skip centering silently.
    - Render re-center button DOM element.
+1b. **On character-switch** — in the WorldMap callback that fires when `selectedChar`
+    transitions to the next player-controlled character (identify the existing method/event
+    emitted by `PhaseManager` or the turn loop; likely a `TURN_CHANGE` event or equivalent):
+    - Call `cameraController.followTo(newActiveCharCoord, 1)`.
+    - Guard: skip if `selectedChar` is null. Do NOT call during enemy or NPC turns
+      (FR-012); check that the incoming character is player-controlled before calling.
+    - Manual pan state is NOT cleared by a character switch; if `isFreePanActive` is true,
+      the follow tween is still dispatched (FR-009 — character moves always resume follow),
+      but the manual pan keys remain registered. The tween will win because `camera.pan()`
+      interrupts any active scroll.
 2. **`onTileClick()`** — after `moveOccupant()`:
    - Call `cameraController.followTo(dest, pathLength)`.
 3. **`update()`** (new method on scene) — each frame:

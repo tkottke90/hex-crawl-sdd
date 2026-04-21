@@ -15,6 +15,8 @@ import type { EnemyCamp } from '../../models/enemy';
 import type { Town } from '../../models/town';
 import { createSaveModule, serialise } from '../../modules/save';
 import { hireCharacter } from '../../modules/recruitment/TownService';
+import { CameraController } from '../../modules/camera/CameraController';
+import type { CameraKeys } from '../../modules/camera/CameraController';
 
 const { module: saveModule } = createSaveModule();
 
@@ -49,6 +51,15 @@ export class WorldMap extends Phaser.Scene {
   private saveBar: HTMLDivElement | null = null;
   private townPanel: TownPanel | null = null;
   private towns: Town[] = [];
+  private cameraController: CameraController | null = null;
+  private reCenterBtn: HTMLButtonElement | null = null;
+  private cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
+  private wasdKeys: {
+    W: Phaser.Input.Keyboard.Key;
+    A: Phaser.Input.Keyboard.Key;
+    S: Phaser.Input.Keyboard.Key;
+    D: Phaser.Input.Keyboard.Key;
+  } | null = null;
 
   constructor() {
     super({ key: 'WorldMap' });
@@ -84,6 +95,9 @@ export class WorldMap extends Phaser.Scene {
     // Explore starting tile
     this.hexModule.store.exploreTile(worldMapData.playerStartCoord);
     this.renderSaveBar(mode);
+
+    // T014: Set up camera after party is constructed
+    this.initCamera();
   }
 
   private restoreFromSave(saveState: ReturnType<typeof serialise>): void {
@@ -99,6 +113,132 @@ export class WorldMap extends Phaser.Scene {
       this.statPanel.render(this.party[0]);
     }
     this.renderSaveBar(saveState.gameMode.type);
+
+    // T014: Set up camera after party is restored
+    this.initCamera();
+  }
+
+  // ── Camera setup (T014) ───────────────────────────────────────────────────
+
+  /** Returns the active character's current tile coord, or null if no active char. */
+  private getActiveCharCoord(): HexCoord | null {
+    if (!this.selectedChar) return null;
+    const map = this.hexModule.store.getMap();
+    for (const t of Object.values(map.tiles)) {
+      if (t.occupants.includes(this.selectedChar.id)) return t.coord;
+    }
+    return null;
+  }
+
+  /** True for party members that the player directly controls (PC and escort on world map). */
+  private isPlayerControlled(ch: Character): boolean {
+    return ch.role === 'pc' || ch.role === 'escort' || ch.role === 'adventurer';
+  }
+
+  /**
+   * T014: Construct CameraController, call setBounds(), center on active char.
+   * Also registers keyboard inputs (T027) and creates re-center button (T031).
+   */
+  private initCamera(): void {
+    const tiles = Object.values(this.hexModule.store.getMap().tiles);
+    this.cameraController = new CameraController({
+      camera: this.cameras.main,
+      tileWorldPos: (coord) => toPixel(coord, TILE_SIZE),
+      tileSize: TILE_SIZE,
+    });
+
+    this.cameraController.setBounds(tiles);
+
+    const activeCoord = this.getActiveCharCoord();
+    if (activeCoord) {
+      const { x, y } = toPixel(activeCoord, TILE_SIZE);
+      this.cameraController.centerOn(x, y);
+    }
+
+    // T027: Register keyboard inputs
+    if (this.input.keyboard) {
+      this.cursorKeys = this.input.keyboard.createCursorKeys();
+      this.wasdKeys = {
+        W: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+        A: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+        S: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+        D: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+      };
+    }
+
+    // T031: Create re-center button
+    this.renderReCenterBtn();
+
+    // Expose helpers for e2e tests
+    (this as unknown as Record<string, unknown>)._getActiveCharWorldPos = () => {
+      const coord = this.getActiveCharCoord();
+      if (!coord) return { x: 0, y: 0 };
+      return toPixel(coord, TILE_SIZE);
+    };
+    (this as unknown as Record<string, unknown>)._clickNeighbourTile = () => {
+      if (!this.selectedChar) return false;
+      const coord = this.getActiveCharCoord();
+      if (!coord) return false;
+      const map = this.hexModule.store.getMap();
+      // Find a passable neighbour tile
+      import('../../modules/hex-grid/HexCoordUtils').then(({ neighbors }) => {
+        for (const n of neighbors(coord)) {
+          const key = `${n.q},${n.r}`;
+          if (map.tiles[key]?.passable) {
+            this.onTileClick(map.tiles[key]);
+            break;
+          }
+        }
+      });
+      return true;
+    };
+    (this as unknown as Record<string, unknown>)._simulateEnemyTurn = () => false;
+  }
+
+  /** T027: Called each frame by Phaser — passes keyboard state to CameraController. */
+  update(_time: number, delta: number): void {
+    if (!this.cameraController) return;
+
+    const keys: CameraKeys = {
+      up: (this.cursorKeys?.up.isDown ?? false) || (this.wasdKeys?.W.isDown ?? false),
+      down: (this.cursorKeys?.down.isDown ?? false) || (this.wasdKeys?.S.isDown ?? false),
+      left: (this.cursorKeys?.left.isDown ?? false) || (this.wasdKeys?.A.isDown ?? false),
+      right: (this.cursorKeys?.right.isDown ?? false) || (this.wasdKeys?.D.isDown ?? false),
+    };
+
+    this.cameraController.update(keys, delta);
+  }
+
+  /** T031: Create the persistent re-center button DOM element. */
+  private renderReCenterBtn(): void {
+    if (this.reCenterBtn) { this.reCenterBtn.remove(); this.reCenterBtn = null; }
+
+    const btn = document.createElement('button');
+    btn.id = 'btn-recenter';
+    btn.className = 'fixed bottom-4 right-48 z-30 bg-gray-700 hover:bg-gray-600 text-white text-xs font-bold py-2 px-3 rounded-lg';
+    btn.textContent = '⌖ Re-center';
+    btn.addEventListener('click', () => {
+      if (!this.cameraController) return;
+      const coord = this.getActiveCharCoord();
+      if (coord) this.cameraController.reCenterOn(coord);
+    });
+    document.body.appendChild(btn);
+    this.reCenterBtn = btn;
+  }
+
+  /**
+   * T020b: Select a character and pan the camera to them (character-switch pan).
+   * FR-012 guard: only pan for player-controlled characters.
+   */
+  private selectChar(ch: Character): void {
+    this.selectedChar = ch;
+    this.statPanel.render(ch);
+
+    // T020b: Pan camera to newly selected character (FR-012: player-controlled only)
+    if (this.cameraController && this.isPlayerControlled(ch)) {
+      const coord = this.getActiveCharCoord();
+      if (coord) this.cameraController.followTo(coord, 1);
+    }
   }
 
   private renderSaveBar(mode: GameModeType): void {
@@ -252,29 +392,25 @@ export class WorldMap extends Phaser.Scene {
   }
 
   private renderMap(): void {
-    const cam = this.cameras.main;
     const tiles = Object.values(this.hexModule.store.getMap().tiles);
 
     for (const tile of tiles) {
       const { x, y } = toPixel(tile.coord, TILE_SIZE);
-      const offsetX = this.scale.width / 2;
-      const offsetY = this.scale.height / 2;
 
       const color = terrainColor(tile.terrain);
       const gfx = this.add.graphics();
       const fogged = !tile.explored;
-      this.drawHex(gfx, offsetX + x, offsetY + y, TILE_SIZE - 2, color, fogged);
+      this.drawHex(gfx, x, y, TILE_SIZE - 2, color, fogged);
 
       // Make tile interactive
-      const hitArea = new Phaser.Geom.Circle(offsetX + x, offsetY + y, TILE_SIZE - 4);
+      const hitArea = new Phaser.Geom.Circle(x, y, TILE_SIZE - 4);
       gfx.setInteractive(hitArea, Phaser.Geom.Circle.Contains);
       gfx.on('pointerdown', () => this.onTileClick(tile));
       gfx.on('pointerover', () => { gfx.setAlpha(0.8); });
       gfx.on('pointerout', () => { gfx.setAlpha(1); });
     }
 
-    cam.setZoom(1);
-    cam.setBounds(0, 0, this.scale.width * 2, this.scale.height * 2);
+    this.cameras.main.setZoom(1);
   }
 
   private drawHex(
@@ -297,21 +433,17 @@ export class WorldMap extends Phaser.Scene {
   }
 
   private renderParty(): void {
-    const offsetX = this.scale.width / 2;
-    const offsetY = this.scale.height / 2;
-
     for (const ch of this.party) {
       const map = this.hexModule.store.getMap();
       // Find which tile this character occupies
       for (const tile of Object.values(map.tiles)) {
         if (tile.occupants.includes(ch.id)) {
           const { x, y } = toPixel(tile.coord, TILE_SIZE);
-          const sprite = this.add.image(offsetX + x, offsetY + y - 5, ch.portrait);
+          const sprite = this.add.image(x, y - 5, ch.portrait);
           sprite.setScale(0.7);
           sprite.setInteractive();
           sprite.on('pointerdown', () => {
-            this.selectedChar = ch;
-            this.statPanel.render(ch);
+            this.selectChar(ch);
           });
           this.charSprites.set(ch.id, sprite);
           break;
@@ -341,6 +473,11 @@ export class WorldMap extends Phaser.Scene {
     const dest = path[path.length - 1];
     this.hexModule.store.moveOccupant(this.selectedChar.id, fromCoord, dest);
     this.hexModule.store.exploreTile(dest);
+
+    // T020: Follow the character to their new tile (FR-012: player-controlled only)
+    if (this.cameraController && this.isPlayerControlled(this.selectedChar)) {
+      this.cameraController.followTo(dest, path.length);
+    }
 
     // Check if destination is a town → show TownPanel
     const destTile = this.hexModule.store.getMap().tiles[`${dest.q},${dest.r}`];
@@ -404,13 +541,11 @@ export class WorldMap extends Phaser.Scene {
     // Tween the character sprite to the new position
     const sprite = this.charSprites.get(this.selectedChar.id);
     if (sprite) {
-      const offsetX = this.scale.width / 2;
-      const offsetY = this.scale.height / 2;
       const { x, y } = toPixel(dest, TILE_SIZE);
       this.tweens.add({
         targets: sprite,
-        x: offsetX + x,
-        y: offsetY + y - 5,
+        x,
+        y: y - 5,
         duration: 300,
         ease: 'Quad.easeOut',
       });
@@ -423,5 +558,7 @@ export class WorldMap extends Phaser.Scene {
     if (this.modeLabel) this.modeLabel.destroy();
     if (this.saveBar) { this.saveBar.remove(); this.saveBar = null; }
     if (this.townPanel) { this.townPanel.destroy(); this.townPanel = null; }
+    // T031: Remove re-center button DOM element
+    if (this.reCenterBtn) { this.reCenterBtn.remove(); this.reCenterBtn = null; }
   }
 }
