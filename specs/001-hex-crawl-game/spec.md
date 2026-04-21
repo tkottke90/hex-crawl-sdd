@@ -37,8 +37,8 @@ The player encounters an enemy on the hex map. Both sides take turns on a tactic
 
 1. **Given** the player's character enters a tile occupied by an enemy, **When** combat begins, **Then** both units are placed on a tactical hex grid in their respective positions.
 2. **Given** it is the player's turn, **When** they select an attack action, **Then** dice roll results (individual dice + modifiers + total) are displayed before damage is applied.
-3. **Given** the player's character reaches 0 HP in Casual mode, **When** combat ends, **Then** the character is incapacitated but not permanently lost, and can be recovered.
-4. **Given** the player's character reaches 0 HP in Roguelike mode, **When** combat ends, **Then** the run ends permanently and the player returns to the main menu.
+3. **Given** an **Adventurer** reaches 0 HP in either mode, **When** combat ends, **Then** the character is permanently dead and their death is recorded (hex coord + turn). The run continues.
+4. **Given** the **PC or Escort** reaches 0 HP in either mode, **When** combat ends, **Then** the run ends immediately ("Journey Over" / "Mission Failed"). In Casual mode the player may reload a prior save from the main menu; in Roguelike mode the save is permanently invalidated.
 
 ---
 
@@ -157,7 +157,7 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - **WorldMap**: Seed value, dimensions, hex tile collection, placed towns, placed encounter zones, generation parameters.
 - **CombatEncounter**: Participating units, current phase (Player / Enemy), acting-unit queue within phase, active round count, combat log, resolution state.
 - **DiceRoll**: Roll type (attack/damage/save), dice notation (e.g., 2d6+3), individual die results, modifier breakdown, total.
-- **SaveState**: Mode, map state, character roster, current location, timestamp, game version.
+- **SaveState**: Mode, map state, character roster, current location, timestamp, game version, `deathHistory: DeathRecord[]` (cumulative log of all fallen characters — survives Casual reloads), `invalidated: boolean` (set `true` on PC/Escort death in Roguelike mode — prevents all further loads).
 - **GameMode**: Type (Casual / Roguelike), save permission rules. Casual: manual save permitted at any time outside combat; player may reload prior saves freely; Adventurer deaths are still permanent. Roguelike: auto-save only; save permanently invalidated on PC or Escort death.
 - **MetaProgressionModule** *(v1 stub — no active data)*: Interface placeholder satisfying Constitution Principle IV. In v1 it persists an empty record. Future versions populate it with run outcomes, unlocks, and carry-over options without changing the core save contract.
 

@@ -60,51 +60,39 @@ specs/001-hex-crawl-game/
 
 ```text
 src/
-├── scenes/                   # Phaser scenes (one per screen)
-│   ├── BootScene.ts          # asset preload
-│   ├── MainMenuScene.ts      # mode select, load game
-│   ├── WorldMapScene.ts      # hex world map + navigation
-│   ├── CombatScene.ts        # tactical hex combat
-│   └── UIOverlayScene.ts     # HUD, stat panels (HTML/Tailwind overlay)
-├── game/                     # Pure game logic — NO Phaser imports
-│   ├── hex/
-│   │   ├── HexCoord.ts       # cube coord type + neighbor/distance helpers
-│   │   ├── HexGrid.ts        # world map data structure
-│   │   ├── MapGenerator.ts   # procedural generation (R-005)
-│   │   └── Pathfinder.ts     # A* on cube coords (R-006)
-│   ├── combat/
-│   │   ├── CombatEngine.ts   # phase resolution, turn queue
-│   │   ├── DiceRoller.ts     # d20 + modifier system (R-011)
-│   │   └── AI.ts             # enemy + friendly-NPC AI
-│   ├── progression/
-│   │   ├── XPSystem.ts       # universal XP curve + level-up
-│   │   ├── ClassRegistry.ts  # class definitions + growth rates
-│   │   └── PromotionSystem.ts# class evolution paths
-│   ├── party/
-│   │   ├── Party.ts          # roster management (PC + Escort + Adventurers)
-│   │   └── DeathHandler.ts   # death record, run-end conditions
-│   ├── recruitment/
-│   │   └── RecruitmentSystem.ts
-│   └── modes/
-│       ├── CasualMode.ts
-│       └── RoguelikeMode.ts
-├── save/
-│   ├── SaveService.ts        # IndexedDB read/write (R-007)
-│   ├── SaveMigrations.ts     # sequential pure-function migrations (R-008)
-│   ├── SaveExporter.ts       # export/import via FileReader (R-009)
-│   └── schemas/
-│       └── SaveStateSchema.ts # Zod schema (R-010)
-├── meta/
-│   └── MetaProgressionModule.ts  # v1 stub — empty record
-└── ui/
-    ├── HUD.ts               # mode label, party status bar
-    ├── StatBlock.ts          # character stat panel
-    └── DiceDisplay.ts        # animated dice roll reveal
+├── main.ts                   # Phaser Game entry point
+├── style.css                 # Tailwind v4 import
+├── game/
+│   └── scenes/               # Phaser scenes
+│       ├── Boot.ts            # asset key registration
+│       ├── Preloader.ts       # asset loading + progress bar
+│       ├── MainMenu.ts        # mode select, class pick, load game
+│       ├── WorldMap.ts        # hex world map + navigation
+│       ├── Combat.ts          # tactical hex combat
+│       └── RunEnd.ts          # run-end summary screen
+│   └── ui/                   # HTML/Tailwind overlays (pointer-events-none)
+│       ├── StatPanel.ts       # character stat block
+│       ├── DiceRollOverlay.ts # animated dice result
+│       ├── PhaseLabel.ts      # PLAYER PHASE / ENEMY PHASE badge
+│       ├── ModeLabel.ts       # CASUAL / ROGUELIKE persistent HUD badge
+│       ├── LevelUpOverlay.ts  # stat diff on level-up
+│       ├── PromotionModal.ts  # class evolution choice
+│       ├── TownPanel.ts       # hire pool UI
+│       └── Toast.ts           # error/info toasts
+├── modules/                  # Pure game logic — NO Phaser imports
+│   ├── hex-grid/             # HexCoordUtils, MapGenerator, HexGridStore, Pathfinder, ReachableTiles
+│   ├── combat/               # CombatState, DiceResolver, PhaseManager, ModeRules, RunEndDetector, ItemService
+│   ├── progression/          # ProgressionService
+│   ├── save/                 # Serialiser, Migrator, IndexedDbStore, FileExporter, AutoSave
+│   ├── recruitment/          # TownService, EncounterTrigger, FriendlyNpcAi
+│   └── meta-progression/     # stub only
+├── models/                   # TypeScript interfaces (no logic)
+├── schemas/                  # Zod schemas mirroring models
+└── data/                     # Static data — classes.ts, escort.ts, palette.ts
 
 tests/
-├── unit/                    # Vitest — all src/game/ modules
-├── integration/             # Vitest — save round-trip, migration chain
-└── e2e/                     # Playwright — US1–US5 acceptance scenarios
+├── unit/                     # Vitest — all modules/
+└── e2e/                      # Playwright — US1–US5 acceptance + perf
 ```
 
 ## Complexity Tracking
