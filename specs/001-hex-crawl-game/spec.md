@@ -132,7 +132,7 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - **FR-004**: Combat MUST be turn-based on a tactical hex grid using a phase-based model: all player units act during the **Player Phase**, then all enemy units act during the **Enemy Phase**; phases alternate until combat resolves.
 - **FR-004a**: During the Player Phase, each player unit MAY move and perform one action (attack, wait, use item). Once a unit has acted it is marked exhausted and cannot act again that phase.
 - **FR-004b**: During the Enemy Phase, enemy units act via AI in sequence; the player observes but cannot issue commands.
-- **FR-005**: Each dice roll MUST show individual die results, applicable modifiers, and the final total. Attack rolls use a d20 + attribute modifier (floor((attr−10)/2)) vs. the target's defense value; damage uses a separate dice expression plus the relevant attribute modifier; saving throws use d20 + attribute modifier vs. a difficulty class (DC).
+- **FR-005**: Each dice roll MUST show individual die results, applicable modifiers, and the final total. Attack rolls use a d20 + attribute modifier (floor((attr−10)/2)) vs. the target's defense value; damage uses a separate dice expression plus the relevant attribute modifier. *(Saving throw mechanics are deferred to v2; the `DiceRoll` type retains `type: 'saving-throw'` as an extension point.)*
 - **FR-006**: Characters MUST gain XP from combat outcomes and level up when a universal XP threshold is met (thresholds are identical across all classes). On level-up, each stat increases according to that character's class-specific growth rates.
 - **FR-007**: The game MUST provide at least two class-evolution paths at defined promotion thresholds.
 - **FR-008**: In Casual mode, the game MUST allow manual save-to-browser-storage at any time outside of combat.
@@ -141,12 +141,12 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - **FR-011**: The game MUST support importing a save file from the player's device.
 - **FR-012**: The party MUST always begin with exactly 2 characters: the **Player Character** (PC — the hero/leader, player-selected at run start) and the **Escort** (the person being protected to the destination). Additional **Adventurers** MAY join through recruitment, growing the party to a maximum of 8 total members.
 - **FR-012a**: Towns MUST offer level 1 heroes available for hire to expand the party.
-- **FR-012b**: A rare combat event (trigger probability < 10%) MUST exist in which the party stumbles upon an in-progress fight containing a higher-level friendly NPC. The NPC is AI-controlled during that encounter. If the player wins and the NPC survives, they offer to join the party.
+- **FR-012b**: A rare combat event (trigger probability < 10%) MUST exist in which the party stumbles upon an in-progress fight containing a higher-level friendly NPC. The NPC's level is `clamp(averagePartyLevel + 2, 3, 15)`. The NPC is AI-controlled during that encounter. If the player wins and the NPC survives, they offer to join the party.
 - **FR-012c**: During a recruitment combat event the friendly NPC MUST NOT be player-controlled; the player MUST NOT be able to issue commands to them.
 - **FR-013**: In Casual mode, the player MAY reload any previously saved state to avoid or undo the death of the PC or Escort. Save-scumming is intentionally permitted. Adventurer deaths are permanent in all cases regardless of reloading; their death record (hex coordinates, turn number) persists across save reloads.
 - **FR-014**: The run ends immediately when: (a) the **Player Character** dies (journey over), or (b) the **Escort** dies (mission failed). This applies in both modes. In Roguelike mode the save is also permanently invalidated on either condition. Adventurer deaths do NOT end the run; each death MUST be recorded with hex coordinates and turn number and displayed to the player.
 - **FR-015**: The active game mode MUST be persistently displayed in the HUD throughout gameplay.
-- **FR-016**: The game's visual tone MUST be consistent with classic high fantasy (medieval, pre-industrial, nature-focused). Audio is a stretch goal and not required for the core game loop.
+- **FR-016**: The game's visual tone SHOULD be consistent with classic high fantasy (medieval, pre-industrial, nature-focused). Audio is a stretch goal and not required for the core game loop.
 
 ### Key Entities
 
@@ -171,7 +171,7 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - **SC-002**: All dice roll results are visible within 500 ms of an action being confirmed.
 - **SC-003**: A save operation (to browser storage) completes and is confirmed to the player in under 2 seconds.
 - **SC-004**: A successful save-export and save-import round-trip restores 100% of game state without data loss.
-- **SC-005**: The game runs at a stable 60 fps on a mid-range device during world-map navigation and combat.
+- ~~**SC-005**: The game runs at a stable 60 fps on a mid-range device during world-map navigation and combat.~~ *(Struck — benchmark hardware undefined; measurability deferred to a dedicated performance feature. See T093a for a provisional frame-time guard.)*
 - **SC-006**: Both game modes are playable end-to-end (new game → first combat → character death/survival) without encountering a blocking error.
 - **SC-007**: 100% of character stat values and dice roll components are visible to the player at the moment they are relevant — no hidden math.
 

@@ -193,7 +193,7 @@ interface Town {
 }
 
 interface HireableHero {
-  characterTemplate: Omit<Character, 'id' | 'recruitmentSource' | 'actedThisPhase'>;
+  characterTemplate: Omit<Character, 'id' | 'recruitmentSource' | 'actedThisPhase' | 'deathRecord'>;
   hireCost: number;           // gold or equivalent resource
 }
 ```

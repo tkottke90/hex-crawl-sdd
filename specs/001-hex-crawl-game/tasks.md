@@ -79,7 +79,7 @@
 - [ ] T027 [US1] Implement A* pathfinding in `src/modules/hex-grid/Pathfinder.ts`: `findPath(start, end, map): HexCoord[] | null`. Binary-heap priority queue, `cube_distance` heuristic, respects `passable` and `moveCost`.
 - [ ] T028 [US1] Implement `src/modules/hex-grid/ReachableTiles.ts`: BFS flood-fill `reachableTiles(origin, movePoints, map): HexTile[]`.
 - [ ] T029 [US1] Assemble `src/modules/hex-grid/index.ts`: export a factory `createHexGridModule(map: WorldMap): HexGridModule` satisfying the contract in `contracts/hex-grid.contract.md`.
-- [ ] T030 [US1] Create data `src/data/classes.ts`: define at least 4 base `ClassDefinition` objects (e.g. `fighter`, `rogue`, `mage`, `cleric`) with `growthRates`, `promotionLevel: 10`, `promotionPaths` pointing to promoted class IDs. Define 8 promoted classes. **`growthRates` values are probabilities `0.0–1.0`** — e.g. `str: 0.6` means 60% chance STR increases on each level-up. `applyLevelUp` checks `prng.next() < growthRates[stat]` for each stat.
+- [ ] T030 [US1] Create data `src/data/classes.ts`: define at least 4 base `ClassDefinition` objects (e.g. `fighter`, `rogue`, `mage`, `cleric`) with `growthRates`, `promotionLevel: 10`, `promotionPaths` pointing to promoted class IDs. Define 8 promoted classes. **`growthRates` values are probabilities `0.0–1.0`** — e.g. `str: 0.6` means 60% chance STR increases on each level-up. `applyLevelUp` checks `prng.next() < growthRates[stat]` for each stat. Also create `src/data/escort.ts`: a pre-authored Escort `Character` template (name: "The Ward", class: `fighter`, level 1, fixed base stats — `role: 'escort'` and `recruitmentSource: 'starting'` are assigned at run start in T034; template omits `id`, `deathRecord`, `actedThisPhase`).
 - [ ] T031 [US1] Create `src/game/scenes/Boot.ts` Phaser scene: registers all asset keys for tilesets and character portraits (placeholder 32×32 colored tiles acceptable for v1).
 - [ ] T032 [US1] Create `src/game/scenes/Preloader.ts` Phaser scene: loads all assets registered in Boot, shows progress bar using a Tailwind-styled HTML overlay (`pointer-events-none`).
 - [ ] T033 [US1] Create `src/game/scenes/MainMenu.ts` Phaser scene: "New Game" button → mode selection (Casual / Roguelike) → emits `game:start` with chosen `GameMode`. Mode label persisted in scene registry.
@@ -110,9 +110,10 @@
 - [ ] T041 [US2] Implement `src/modules/combat/CombatState.ts`: manages `CombatEncounter` state; tracks `phase`, `activeUnit`, `log`. Provides `getValidMoveTargets()`, `getAttackTargets()`.
 - [ ] T042 [US2] Implement `src/modules/combat/DiceResolver.ts`: `resolveAttack(attacker, defender, prng): DiceRoll`; applies `hitBonus`, `defenseBonus`, crit/fumble logic; mutates HP on attacker/defender copies (no in-place mutation). **Attack formula**: roll `1d20`; hit if `roll + attacker.hitBonus >= 10 + defender.defenseBonus` (DC = 10 + defenseBonus); nat 20 → crit (double damage dice); nat 1 → fumble (miss). Damage on hit: `1d6 + attacker.hitBonus` (base; class-specific override future). `hitBonus` and `defenseBonus` derived from `data-model.md` formulas.
 - [ ] T043 [US2] Implement `src/modules/combat/PhaseManager.ts`: `startPlayerPhase()`, `endPlayerPhase()`, `runEnemyPhase(ai)`. `actedThisPhase` flag maintenance. Simple enemy AI: move toward nearest player, attack if in range. **Enemy units act in the order they appear in `encounter.enemyUnits[]`** (array index 0 first). If no player is in attack range after moving, the enemy waits (no further action that turn).
-- [ ] T044 [US2] Implement `src/modules/combat/ModeRules.ts`: `applyDefeat(character, mode): Character` — returns updated character with `status: 'dead'` in **both modes**. The mode distinction is purely in save behavior (reload allowed in Casual; save invalidated in Roguelike) — character status is always `'dead'` at 0 HP. Sets `deathRecord: { coord: character.currentCoord, turn: currentTurn }`. Pure function.
+- [ ] T044 [US2] Implement `src/modules/combat/ModeRules.ts`: `applyDefeat(character: Character, mode: GameMode, coord: HexCoord, turn: number): Character` — returns updated character with `status: 'dead'` in **both modes**. The mode distinction is purely in save behavior (reload allowed in Casual; save invalidated in Roguelike) — character status is always `'dead'` at 0 HP. Sets `deathRecord: { coord, turn }`. **`coord` and `turn` are passed in by the caller (Combat scene) — not read from the character.** Pure function.
 - [ ] T045 [US2] Assemble `src/modules/combat/index.ts`: export `createCombatModule(encounter: CombatEncounter, mode: GameMode, prng: PRNG): CombatModule` satisfying `contracts/combat.contract.md`.
-- [ ] T046 [US2] Create `src/game/scenes/Combat.ts` Phaser scene: receives `CombatEncounter` via scene data; renders tactical hex grid (subset of world map); renders unit sprites; exposes player action UI (Move / Attack / Wait buttons); subscribes to `CombatModule` events to animate dice roll overlay and HP changes.
+- [ ] T045a [US2] Implement `src/modules/combat/ItemService.ts` — v1 stub: `useItem(character: Character, itemId: string): Character` returns character unchanged and emits a `item:not-available` event. No item inventory exists in v1; this stub satisfies composability (Constitution Principle IV) so item logic can be layered in v2 without touching the combat phase loop.
+- [ ] T046 [US2] Create `src/game/scenes/Combat.ts` Phaser scene: receives `CombatEncounter` via scene data; renders tactical hex grid (subset of world map); renders unit sprites; exposes player action UI (Move / Attack / Wait / **Use Item** buttons — Use Item calls `ItemService.useItem()` stub in v1, button is present but shows "No items" toast); subscribes to `CombatModule` events to animate dice roll overlay and HP changes.
 - [ ] T047 [US2] Create `src/game/ui/DiceRollOverlay.ts`: Tailwind-styled HTML overlay; receives `DiceRoll`; displays individual dice values, modifier, total, crit/fumble badge. Auto-dismisses after 2 seconds or on click.
 - [ ] T048 [US2] Create `src/game/ui/PhaseLabel.ts`: HUD element always visible in combat; shows "PLAYER PHASE" / "ENEMY PHASE" with appropriate color. Subscribes to phase change events.
 - [ ] T049 [US2] Wire `WorldMap.ts` to detect `EnemyCamp` tile entry and launch `Combat` scene with the encounter data; on combat scene close, mark camp `defeated: true` and return to world map.
@@ -158,7 +159,7 @@
 - [ ] T059 [P] [US4] Write unit tests for `SaveModule` serialisation in `tests/unit/save/serialise.test.ts`: `serialise(gameState): SaveState` produces valid JSON; `SaveStateSchema.safeParse()` accepts it; version field present.
 - [ ] T060 [P] [US4] Write unit tests for `SaveModule` migration in `tests/unit/save/migration.test.ts`: `migrate(data, fromVersion, toVersion)` applies correct migration steps sequentially; unknown future version throws.
 - [ ] T061 [P] [US4] Write unit tests for `SaveModule` Zod import validation in `tests/unit/save/validation.test.ts`: valid save → passes; mangled `HexCoord` (invariant broken) → `safeParse` fails with descriptive error.
-- [ ] T062 [P] [US4] Write Playwright e2e test `tests/e2e/save-load.spec.ts`: start game → move character → save → reload page → load save → assert character is on correct tile.
+- [ ] T062 [P] [US4] Write Playwright e2e test `tests/e2e/save-load.spec.ts`: (a) browser storage round-trip — start game → move character → save → reload page → load save → assert character is on correct tile; (b) **SC-004 file round-trip** — export save via `FileExporter` → parse imported file → assert all key `SaveState` fields (`deathHistory`, `invalidated`, `gold`, `currentLocation`, `party` length) match the original exactly.
 
 ### Implementation
 
@@ -212,7 +213,7 @@
 ### Implementation
 
 - [ ] T079 Implement `src/modules/recruitment/TownService.ts`: `getHirePool(town: Town): HireableHero[]`, `hireCharacter(hero: HireableHero, party: Character[]): Character[]` — validates party cap, converts template to full `Character` with `role: 'adventurer'` and `recruitmentSource: 'hired'` (never `'starting'` — that is reserved for the PC and Escort created at run start in T034).
-- [ ] T080 Implement `src/modules/recruitment/EncounterTrigger.ts`: `rollRecruitmentEncounter(encounter: CombatEncounter, prng: PRNG): RecruitmentEvent | null` — rolls prng < 0.1; if triggered, selects a random ID from `encounter.friendlyNpcs` (`string[]`), resolves it to the full `EnemyUnit` via `encounter.units`, then constructs and returns the `RecruitmentEvent`.
+- [ ] T080 Implement `src/modules/recruitment/EncounterTrigger.ts`: `rollRecruitmentEncounter(encounter: CombatEncounter, unitLookup: Record<string, EnemyUnit>, prng: PRNG): RecruitmentEvent | null` — rolls prng < 0.1; if triggered, selects a random ID from `encounter.friendlyNpcs` (`string[]`), resolves it to the full `EnemyUnit` via `unitLookup[id]`, then constructs and returns the `RecruitmentEvent`. (`CombatEncounter` stores only id arrays; callers pass the lookup map.) The friendly NPC's level MUST be `clamp(averagePartyLevel + 2, 3, 15)` (FR-012b).
 - [ ] T080a Implement friendly NPC AI in `src/modules/recruitment/FriendlyNpcAi.ts`: `takeTurn(npc: EnemyUnit, encounter: CombatEncounter, hexGrid: HexGridModule): void` — simple AI (move toward nearest enemy, attack if in range); NPC unit MUST be registered in `PhaseManager` as a third-party actor, excluded from `getPlayerControllableUnits()`. Satisfies FR-012c.
 - [ ] T081 Assemble `src/modules/recruitment/index.ts`: export `createRecruitmentModule(): RecruitmentModule` satisfying `contracts/recruitment.contract.md`.
 - [ ] T082 Create `src/game/ui/TownPanel.ts`: Tailwind HTML overlay; renders `HireableHero[]` list with name, class, level, and hire cost; "Hire" button calls `hireCharacter()` and updates party HUD; disables hire button when `party.length >= 8` and shows "Party Full" label. (FR-012a)
@@ -244,6 +245,7 @@
 - [ ] T091 [P] Verify `npm run build` produces a bundle with Phaser in its own chunk (`phaser.[hash].js`) and total initial JS < 500 KB (excluding Phaser chunk).
 - [ ] T092 [P] Manual smoke test matrix: Chrome, Firefox, Edge — new game → combat → level up → save → load → export → import → run end (Roguelike).
 - [ ] T093 [P] Write Playwright timing tests for success criteria: SC-001 — assert time from page load to first combat action input available is < 3 minutes (`tests/e2e/perf-sc001.spec.ts`); SC-002 — assert dice roll UI is visible within 500 ms of attack confirmation (`tests/e2e/perf-sc002.spec.ts`); SC-003 — assert save confirmation appears within 2 seconds of save trigger (`tests/e2e/perf-sc003.spec.ts`).
+- [ ] T093a [P] Write Playwright frame-time guard for provisional performance coverage: using Chromium DevTools Protocol tracing, record a world-map pan (10 tile moves) and one full combat round; assert no individual frame exceeds 33 ms (≥ 30 fps floor). Output trace artifact on failure (`tests/e2e/perf-frametime.spec.ts`). *(Provisional guard replacing SC-005 until a dedicated performance feature defines reference hardware.)*
 - [ ] T094 [P] Create `src/data/palette.ts`: export `FANTASY_PALETTE` const with 8 named hex color values (earth tones, forest greens, stone greys, parchment). Add a comment block referencing FR-016 tone guidelines (medieval, pre-industrial, nature-focused). Import and use in `Boot.ts` for placeholder 32×32 colored tile generation until production art assets are provided.
 
 ---
@@ -318,11 +320,11 @@ Deliver a browser-runnable game where a player can:
 | Phase 1: Setup | T001–T009 (9 tasks) | — |
 | Phase 2: Foundational | T010–T019 (10 tasks) | — |
 | Phase 3: US1 hex map | T020–T036 (17 tasks) | US1 (P1) |
-| Phase 4: US2 combat | T037–T049 (13 tasks) | US2 (P2) |
+| Phase 4: US2 combat | T037–T049 + T045a (14 tasks) | US2 (P2) |
 | Phase 5: US3 progression | T050–T058 (9 tasks) | US3 (P3) |
 | Phase 6: US4 save | T059–T070 (12 tasks) | US4 (P4) |
 | Phase 7: US5 modes | T071–T077 + T073a (8 tasks) | US5 (P5) |
 | Phase 8: Recruitment | T078–T083 (6 tasks) | cross-cutting |
 | Phase 9: Stub | T084–T085 (2 tasks) | — |
-| Phase 10: Polish | T086–T092 (7 tasks) | — |
-| **Total** | **93 tasks** | |
+| Phase 10: Polish | T086–T092 + T093a (8 tasks) | — |
+| **Total** | **95 tasks** | |
