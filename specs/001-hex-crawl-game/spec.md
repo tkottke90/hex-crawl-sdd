@@ -113,6 +113,11 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 - Q: How does the party grow / how do new characters join? → A: Two recruitment paths: (1) Level 1 heroes hired from towns; (2) Rare (<10% chance) higher-level characters encountered mid-combat as friendly NPCs in a pre-existing fight — player recruits them by winning the encounter while the NPC survives; NPC is AI-controlled (not player-controlled) during that first combat.
 - Q: What is the combat turn order model? → A: Phase-based (Fire Emblem-style) — all player units act during the Player Phase, then all enemy units act during the Enemy Phase; phases alternate until combat resolves.
 - Q: What carries over between Roguelike runs (meta-progression)? → A: No meta-progression in v1 — every run is fully fresh. However, the save system and run-lifecycle module MUST be designed as composable extension points (per Constitution Principle IV) so that meta-progression can be layered in a future version without refactoring the core loop.
+- Q: How do core attributes mechanically impact dice roll calculations? → A: D&D 5e-style modifier system — attack rolls use d20 + floor((attr−10)/2) vs. the target's defense value; damage uses a separate dice expression (e.g., 1d8+STR modifier); saving throws use d20 + relevant attribute modifier vs. a difficulty class.
+- Q: Are XP thresholds universal or class-specific, and how are per-level stat gains modeled? → A: Universal XP curve (identical thresholds for all classes); each class has its own per-stat growth rates (expressed as a flat bonus or percentage chance per level-up).
+- Q: What is the world-map navigation model? → A: Click-to-move one adjacent hex per action; unvisited tiles are hidden by fog-of-war and revealed as the party moves; encounters (enemy camps, towns, recruitment events) trigger on tile entry.
+- Q: What does "recoverable" mean in Casual mode and when does Roguelike end? → A: The mode distinction is about save behavior, not auto-recovery. In Casual mode the player may reload any prior save to undo character loss (save-scumming is intentionally permitted). In Roguelike mode the save is invalidated (unplayable) the moment the player character or any escort dies — there is no reload path. In both modes, non-player-character deaths are permanent; the engine MUST record each NPC death with hex coordinates and the turn number on which they died, surfacing this to the player as a persistent reminder of cost and consequence.
+- Q: Is there one designated player character or is the whole party equal? → A: The party has a fixed structure: one Player Character (PC, the hero/leader chosen at run start) + one Escort character (the person being protected to the destination — always present from the start). The PC death ends the run (journey over). The Escort death ends the run (mission failed). Additional adventurers recruited along the road are optional party members whose deaths are permanent and recorded but do NOT end the run.
 
 ---
 
@@ -120,40 +125,40 @@ The two modes offer meaningfully different experiences: Casual allows save-anywh
 
 ### Functional Requirements
 
-- **FR-001**: The game MUST render a fully procedurally generated hex-tile world map in the browser without any server dependency. A new map MUST be generated at the start of every run (both modes).
+- **FR-001**: The game MUST render a fully procedurally generated hex-tile world map in the browser without any server dependency. A new map MUST be generated at the start of every run (both modes). The player navigates by clicking one adjacent hex per action; unvisited tiles are hidden by fog-of-war and revealed as the party moves; all encounters trigger on tile entry.
 - **FR-001a**: The procedural generator MUST place towns, enemy encounters, terrain types, and points of interest across the map using seeded randomness so a given seed produces a reproducible map.
 - **FR-002**: The game MUST support exactly two game modes: Casual and Roguelike, selectable at new-game creation.
 - **FR-003**: Player characters MUST have fully visible stat blocks (HP, class, level, core attributes, XP) accessible at any time outside combat.
 - **FR-004**: Combat MUST be turn-based on a tactical hex grid using a phase-based model: all player units act during the **Player Phase**, then all enemy units act during the **Enemy Phase**; phases alternate until combat resolves.
 - **FR-004a**: During the Player Phase, each player unit MAY move and perform one action (attack, wait, use item). Once a unit has acted it is marked exhausted and cannot act again that phase.
 - **FR-004b**: During the Enemy Phase, enemy units act via AI in sequence; the player observes but cannot issue commands.
-- **FR-005**: Each dice roll MUST show individual die results, applicable modifiers, and the final total.
-- **FR-006**: Characters MUST gain XP from combat outcomes and level up when thresholds are met.
+- **FR-005**: Each dice roll MUST show individual die results, applicable modifiers, and the final total. Attack rolls use a d20 + attribute modifier (floor((attr−10)/2)) vs. the target's defense value; damage uses a separate dice expression plus the relevant attribute modifier; saving throws use d20 + attribute modifier vs. a difficulty class (DC).
+- **FR-006**: Characters MUST gain XP from combat outcomes and level up when a universal XP threshold is met (thresholds are identical across all classes). On level-up, each stat increases according to that character's class-specific growth rates.
 - **FR-007**: The game MUST provide at least two class-evolution paths at defined promotion thresholds.
 - **FR-008**: In Casual mode, the game MUST allow manual save-to-browser-storage at any time outside of combat.
 - **FR-009**: In Roguelike mode, the game MUST auto-save on each phase transition (end of Enemy Phase) and on world-map tile movement. Manual save-loading mid-run is NOT permitted.
 - **FR-010**: The game MUST support exporting a save file as a downloadable file to the player's device.
 - **FR-011**: The game MUST support importing a save file from the player's device.
-- **FR-012**: The player party MUST start with a minimum of 2 characters and MAY grow to a maximum of 8 characters through in-game progression.
+- **FR-012**: The party MUST always begin with exactly 2 characters: the **Player Character** (PC — the hero/leader, player-selected at run start) and the **Escort** (the person being protected to the destination). Additional **Adventurers** MAY join through recruitment, growing the party to a maximum of 8 total members.
 - **FR-012a**: Towns MUST offer level 1 heroes available for hire to expand the party.
 - **FR-012b**: A rare combat event (trigger probability < 10%) MUST exist in which the party stumbles upon an in-progress fight containing a higher-level friendly NPC. The NPC is AI-controlled during that encounter. If the player wins and the NPC survives, they offer to join the party.
 - **FR-012c**: During a recruitment combat event the friendly NPC MUST NOT be player-controlled; the player MUST NOT be able to issue commands to them.
-- **FR-013**: In Casual mode, defeated characters MUST be recoverable (not permanently lost).
-- **FR-014**: In Roguelike mode, defeated characters MUST be permanently removed (permadeath); the run ends when the last character falls.
+- **FR-013**: In Casual mode, the player MAY reload any previously saved state to avoid or undo the death of the PC or Escort. Save-scumming is intentionally permitted. Adventurer deaths are permanent in all cases regardless of reloading; their death record (hex coordinates, turn number) persists across save reloads.
+- **FR-014**: The run ends immediately when: (a) the **Player Character** dies (journey over), or (b) the **Escort** dies (mission failed). This applies in both modes. In Roguelike mode the save is also permanently invalidated on either condition. Adventurer deaths do NOT end the run; each death MUST be recorded with hex coordinates and turn number and displayed to the player.
 - **FR-015**: The active game mode MUST be persistently displayed in the HUD throughout gameplay.
 - **FR-016**: The game's visual tone MUST be consistent with classic high fantasy (medieval, pre-industrial, nature-focused). Audio is a stretch goal and not required for the core game loop.
 
 ### Key Entities
 
-- **Character**: Name, class, level, XP, HP (current/max), core attributes (STR, DEX, CON, INT, WIS, CHA), equipment slots, portrait, status effects, recruitment source (hired / encountered). The player roster grows from 2 to up to 8 characters via town hiring or rare encounter-based recruitment.
+- **Character**: Name, role (**PC** / **Escort** / **Adventurer**), class, level, XP, HP (current/max), core attributes (STR, DEX, CON, INT, WIS, CHA — each scored 3–18; modifier = floor((score−10)/2)), defense value (base + modifiers), equipment slots, portrait, status effects, recruitment source (starting / hired / encountered), death record (hex coordinates + turn number, null if alive). The player roster grows from 2 to up to 8 characters via town hiring or rare encounter-based recruitment.
 - **RecruitmentEvent**: Trigger type (town-hire / rare-encounter), NPC unit reference, encounter outcome, recruitment offer state (pending / accepted / declined / failed-npc-died).
-- **Class**: Name, tier, growth rates, promotion thresholds, available promotion paths, base stats.
-- **HexTile**: Grid coordinates, terrain type, passability, movement cost, occupant(s), visual layer, point-of-interest tag (town / enemy-camp / recruitment-event / empty).
+- **Class**: Name, tier, growth rates (per-stat flat bonus or % chance applied on level-up), promotion thresholds, available promotion paths, base stats. All classes share a universal XP curve.
+- **HexTile**: Grid coordinates, terrain type, passability, movement cost, occupant(s), visual layer, point-of-interest tag (town / enemy-camp / recruitment-event / empty), fog-of-war state (hidden / revealed).
 - **WorldMap**: Seed value, dimensions, hex tile collection, placed towns, placed encounter zones, generation parameters.
 - **CombatEncounter**: Participating units, current phase (Player / Enemy), acting-unit queue within phase, active round count, combat log, resolution state.
 - **DiceRoll**: Roll type (attack/damage/save), dice notation (e.g., 2d6+3), individual die results, modifier breakdown, total.
 - **SaveState**: Mode, map state, character roster, current location, timestamp, game version.
-- **GameMode**: Type (Casual / Roguelike), death handling rule, save permission rules.
+- **GameMode**: Type (Casual / Roguelike), save permission rules. Casual: manual save permitted at any time outside combat; player may reload prior saves freely; Adventurer deaths are still permanent. Roguelike: auto-save only; save permanently invalidated on PC or Escort death.
 - **MetaProgressionModule** *(v1 stub — no active data)*: Interface placeholder satisfying Constitution Principle IV. In v1 it persists an empty record. Future versions populate it with run outcomes, unlocks, and carry-over options without changing the core save contract.
 
 ---

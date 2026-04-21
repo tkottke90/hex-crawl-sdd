@@ -3,53 +3,34 @@
 **Branch**: `001-hex-crawl-game` | **Date**: 2026-04-21 | **Spec**: [spec.md](spec.md)  
 **Input**: Feature specification from `specs/001-hex-crawl-game/spec.md`
 
----
-
 ## Summary
 
-Build a local-first, browser-only hex crawl game using PhaserJS 3, TypeScript (strict), Vite, TailwindCSS v4, and Zod. The game features a fully procedurally generated hex world map, Fire Emblem-inspired phase-based tactical combat with visible D&D-style dice rolls, a growing party of 2–8 characters with class evolution, two game modes (Casual / Roguelike with permadeath), and a save system supporting both browser storage (IndexedDB) and device file export/import.
-
-The architecture is module-separated (Constitution Principles III & IV): `HexGridModule`, `CombatModule`, `ProgressionModule`, `SaveModule`, `RecruitmentModule`, and a `MetaProgressionModule` stub each expose a typed interface contract; no module references another's internals.
-
----
+A local-first, browser-based hex crawl game with tactical turn-based combat, D&D 5e-style dice resolution, class progression with evolution paths, and two meaningfully different game modes (Casual / Roguelike). The player controls a **PC** (hero/leader) escorting a protected **Escort** to a destination tile, optionally recruiting **Adventurers** along the way. Built with PhaserJS 3 + Vite + TypeScript + Tailwind v4. All game state persists locally via IndexedDB; saves export as versioned JSON.
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.7 (strict mode; `strictPropertyInitialization: false`)  
-**Primary Dependencies**: Phaser 3 (renderer + input), Vite 6 (bundle + dev), TailwindCSS v4 (HTML overlays), Zod (save validation), `idb` (IndexedDB wrapper), `simplex-noise` (procedural map)  
-**Storage**: IndexedDB (in-browser saves via `idb`); device file system via `Blob` + `FileReader` API  
-**Testing**: Vitest (unit, with `@vitest/coverage-v8`) + Playwright (e2e)  
-**Target Platform**: Desktop browser — Chrome, Firefox, Edge, Safari (latest 2 versions); no server  
-**Project Type**: Browser game (single-page, local-first, no backend)  
-**Performance Goals**: Stable 60 fps during world-map navigation and combat; dice roll result visible ≤500 ms post-action  
-**Constraints**: Fully offline-capable; no login, no network calls; save exports are human-readable versioned JSON  
-**Scale/Scope**: Single-player; party 2–8; world map procedurally generated per run; desktop browser only (v1)
+**Language/Version**: TypeScript 5.7 (strict mode)  
+**Primary Dependencies**: Phaser 3.60+, Vite 6, Tailwind v4 (`@tailwindcss/vite`), Zod, `idb`, `simplex-noise`  
+**Storage**: IndexedDB (via `idb` wrapper) for browser saves; JSON file export/import for device saves  
+**Testing**: Vitest (unit + logic) + Playwright (end-to-end game flow)  
+**Target Platform**: Desktop browser — Chrome, Firefox, Safari, Edge (latest 2 versions each)  
+**Project Type**: Browser game (single-page, no server)  
+**Performance Goals**: Stable 60 fps during world-map navigation and combat  
+**Constraints**: Fully offline-capable (no CDN, no server requests at runtime); save round-trip < 2s; first combat action reachable < 3 minutes from launch  
+**Scale/Scope**: Single-player; party 2–8 characters; procedurally generated world map per run; two game modes
 
 ## Constitution Check
 
-*GATE: Must pass before implementation begins. Re-evaluated post-design below.*
+*GATE: Evaluated against `.specify/memory/constitution.md`*
 
-### Pre-Design Check (against Constitution v1.1.0)
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| I. Simple & Playable First | ✅ PASS | US1 (hex map + move) is the minimum viable slice; all other user stories layer on top |
+| II. Test-Driven Development | ✅ PASS | All modules below have explicit unit test targets; Playwright e2e covers each User Story |
+| III. Component/Module Separation | ✅ PASS | Game logic, Phaser rendering, and UI overlay are independent modules with explicit interfaces (see contracts/) |
+| IV. Composability & Reusability | ✅ PASS | `MetaProgressionModule` stub satisfies extension-point requirement; HexGrid, CombatEngine, SaveService designed as standalone modules |
 
-| Principle | Check | Status |
-|---|---|---|
-| **I. Simple & Playable First** | US1 (hex map + movement) is the P1 slice. Each user story is independently playable before the next is built. No polish features are planned before the game loop exists. | ✅ PASS |
-| **II. Test-Driven Development** | All module contracts are defined before implementation. TDD cycle (Red→Green→Refactor) is mandatory per tasks. Vitest unit tests + Playwright e2e tests required per story. | ✅ PASS |
-| **III. Component/Module Separation** | HexGridModule, CombatModule, ProgressionModule, SaveModule, RecruitmentModule, MetaProgressionModule are independently defined with typed interface contracts. No cross-module internal references permitted. | ✅ PASS |
-| **IV. Composability & Reusability** | MetaProgressionModule is a stub in v1 with a defined extension interface. DiceRoller, PRNG, and noise utilities are ignorant of game context. All features implemented as composable modules. | ✅ PASS |
-
-### Post-Design Re-Check
-
-| Principle | Design Decision | Status |
-|---|---|---|
-| **I.** | Tilemap + Phaser native camera satisfies v1 rendering, no premature optimisation. | ✅ PASS |
-| **II.** | Zod schemas defined in `src/schemas/` mirror `src/models/` — schemas are testable independently. | ✅ PASS |
-| **III.** | Contracts directory defines 6 module boundaries (including dedicated ProgressionModule); all inter-module communication flows through the contract interface. | ✅ PASS |
-| **IV.** | `MetaProgressionModule` stub confirms the extension point pattern; `SaveModule` migration table is an independent composable function. | ✅ PASS |
-
-**No violations. No complexity justifications required.**
-
----
+**No gate violations.**
 
 ## Project Structure
 
@@ -57,90 +38,75 @@ The architecture is module-separated (Constitution Principles III & IV): `HexGri
 
 ```text
 specs/001-hex-crawl-game/
-├── plan.md              ← This file
-├── research.md          ← Phase 0 complete
-├── data-model.md        ← Phase 1 complete
-├── quickstart.md        ← Phase 1 complete
-├── contracts/
-│   ├── README.md
-│   ├── hex-grid.contract.md
-│   ├── combat.contract.md
-│   ├── progression.contract.md
-│   ├── save.contract.md
-│   ├── recruitment.contract.md
-│   └── meta-progression.contract.md
-└── tasks.md             ← Phase 2 complete
+├── plan.md              ← this file
+├── research.md          ← R-001–R-013 technology & design decisions
+├── data-model.md        ← TypeScript types + Zod schemas for all entities
+├── quickstart.md        ← dev setup commands
+├── tasks.md             ← implementation tasks (generated by /speckit.tasks)
+├── checklists/
+│   ├── full-spec.md
+│   ├── implementation-readiness.md
+│   └── requirements.md
+└── contracts/
+    ├── hex-grid.contract.md
+    ├── combat.contract.md
+    ├── progression.contract.md
+    ├── recruitment.contract.md
+    ├── save.contract.md
+    └── meta-progression.contract.md
 ```
 
 ### Source Code (repository root)
 
 ```text
 src/
-├── main.ts                    # App entry: mounts Phaser game, imports Tailwind CSS
-├── style.css                  # @import "tailwindcss"
-├── game/
-│   ├── main.ts                # Phaser Game config, scene registry
-│   └── scenes/
-│       ├── Boot.ts            # Asset registration
-│       ├── Preloader.ts       # Progress bar, asset load
-│       ├── MainMenu.ts        # Mode selection, load/new game
-│       ├── WorldMap.ts        # Hex world navigation, town visits, encounter triggers
-│       ├── Combat.ts          # Phase-based tactical combat, dice roll display
-│       └── RunEnd.ts          # Roguelike run-end summary screen
-├── modules/
-│   ├── hex-grid/              # HexGridModule: coords, pathfinding, map access
-│   ├── combat/                # CombatModule: phase management, AI, dice resolution
-│   ├── progression/           # ProgressionModule: XP, level-up, class promotion
-│   ├── save/                  # SaveModule: IndexedDB, file export/import, migration
-│   ├── recruitment/           # RecruitmentModule: town hire, rare encounter trigger, NPC AI
-│   └── meta-progression/      # MetaProgressionModule: v1 stub
-├── models/                    # TypeScript interfaces (data-model.md)
-├── schemas/                   # Zod schemas mirroring models/
-├── data/
-│   └── classes.ts             # ClassDefinition registry (base + promoted)
-└── utils/
-    ├── dice.ts                # DiceRoller: pure, no game context
-    ├── prng.ts                # Seedable PRNG (xoshiro128**)
-    └── noise.ts               # simplex-noise wrapper, normalised output
+├── scenes/                   # Phaser scenes (one per screen)
+│   ├── BootScene.ts          # asset preload
+│   ├── MainMenuScene.ts      # mode select, load game
+│   ├── WorldMapScene.ts      # hex world map + navigation
+│   ├── CombatScene.ts        # tactical hex combat
+│   └── UIOverlayScene.ts     # HUD, stat panels (HTML/Tailwind overlay)
+├── game/                     # Pure game logic — NO Phaser imports
+│   ├── hex/
+│   │   ├── HexCoord.ts       # cube coord type + neighbor/distance helpers
+│   │   ├── HexGrid.ts        # world map data structure
+│   │   ├── MapGenerator.ts   # procedural generation (R-005)
+│   │   └── Pathfinder.ts     # A* on cube coords (R-006)
+│   ├── combat/
+│   │   ├── CombatEngine.ts   # phase resolution, turn queue
+│   │   ├── DiceRoller.ts     # d20 + modifier system (R-011)
+│   │   └── AI.ts             # enemy + friendly-NPC AI
+│   ├── progression/
+│   │   ├── XPSystem.ts       # universal XP curve + level-up
+│   │   ├── ClassRegistry.ts  # class definitions + growth rates
+│   │   └── PromotionSystem.ts# class evolution paths
+│   ├── party/
+│   │   ├── Party.ts          # roster management (PC + Escort + Adventurers)
+│   │   └── DeathHandler.ts   # death record, run-end conditions
+│   ├── recruitment/
+│   │   └── RecruitmentSystem.ts
+│   └── modes/
+│       ├── CasualMode.ts
+│       └── RoguelikeMode.ts
+├── save/
+│   ├── SaveService.ts        # IndexedDB read/write (R-007)
+│   ├── SaveMigrations.ts     # sequential pure-function migrations (R-008)
+│   ├── SaveExporter.ts       # export/import via FileReader (R-009)
+│   └── schemas/
+│       └── SaveStateSchema.ts # Zod schema (R-010)
+├── meta/
+│   └── MetaProgressionModule.ts  # v1 stub — empty record
+└── ui/
+    ├── HUD.ts               # mode label, party status bar
+    ├── StatBlock.ts          # character stat panel
+    └── DiceDisplay.ts        # animated dice roll reveal
 
 tests/
-├── unit/
-│   ├── utils/
-│   ├── schemas/
-│   ├── hex-grid/
-│   ├── combat/
-│   ├── progression/
-│   ├── save/
-│   └── recruitment/
-└── e2e/
-    ├── new-game.spec.ts
-    ├── combat.spec.ts
-    ├── save-load.spec.ts
-    └── mode-distinction.spec.ts
-
-public/
-└── assets/
-    ├── tilemaps/
-    ├── tilesets/
-    └── portraits/
+├── unit/                    # Vitest — all src/game/ modules
+├── integration/             # Vitest — save round-trip, migration chain
+└── e2e/                     # Playwright — US1–US5 acceptance scenarios
 ```
 
-**Structure Decision**: Single-project layout. No backend. All source under `src/`; modules are subdirectories of `src/modules/` with `index.ts` exporting only the public contract interface. Tests mirror source tree. ProgressionModule is a dedicated first-class module (not part of CombatModule) to satisfy Constitution Principle III.
+## Complexity Tracking
 
----
-
-## Key Technical Decisions
-
-| Topic | Decision |
-|---|---|
-| Hex coordinates | Cube `{q,r,s}` — invariant `q+r+s=0` enforced at construction; `max(|Δq|,|Δr|,|Δs|)` distance for A* |
-| Map generation | `simplex-noise` two-pass (elevation + moisture) → biome lookup; seeded PRNG per run |
-| Phaser scaffold | Official `phaserjs/template-vite-ts`; Phaser in its own Vite chunk (`manualChunks`) |
-| UI overlays | TailwindCSS v4 via `@tailwindcss/vite`; HTML overlays with `pointer-events-none` on passive elements |
-| Save storage | IndexedDB via `idb`; versioned JSON with Zod parse on import |
-| Pathfinding | Custom A* on cube coords; binary-heap priority queue |
-| Progression | Dedicated `ProgressionModule` (`src/modules/progression/`); separated from `CombatModule` |
-| Auto-save trigger | Event-driven: fires on `phase:enemyPhaseEnd` and `occupant:moved`; Roguelike mode only |
-| Combat turn model | Phase-based (Fire Emblem): Player Phase → Enemy Phase; `actedThisPhase` flag per unit |
-| Promotion threshold | Level 10 (fixed for v1); defined as `promotionLevel: 10` on each base `ClassDefinition` in `src/data/classes.ts`; configurable per class for future variants without architectural change |
-| MetaProgression | v1 stub only; `MetaProgressionModule` interface reserved for future carry-over mechanics |
+No constitution violations to justify.

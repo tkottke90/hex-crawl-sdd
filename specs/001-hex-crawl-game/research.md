@@ -136,3 +136,44 @@ return result.data; // fully typed
 **Rationale**: Validates user-supplied data at the system boundary (FR spec requirement). `safeParse` gives structured error info without thrown exceptions. Type inference eliminates a separate type declaration.
 
 **Alternatives Considered**: Manual type guards — verbose, error-prone. `valibot` — lighter bundle, similar API; viable swap if bundle size becomes a concern.
+
+---
+
+## R-011: Dice Resolution — D&D 5e Modifier System
+
+**Decision**: Attack rolls use `d20 + floor((attr - 10) / 2)` vs. the target's defense value. Damage uses a separate dice expression (e.g., `1d8 + STR modifier`). Saving throws use `d20 + relevant attribute modifier` vs. a difficulty class (DC).
+
+**Rationale**: D&D 5e's modifier system is familiar to the target audience, scales cleanly across attribute range 3–18 (modifiers −4 to +4 at level 1, expanding with level-up gains), and maps naturally to the `DiceRoll` type already modeled in `data-model.md`. Critical hits (`isCritical: true`) fire when the d20 result equals the die's max face; fumbles (`isFumble: true`) fire on a 1.
+
+**Modifier formula**: `modifier = Math.floor((score - 10) / 2)`  
+**Attribute value range**: 3–18 at character creation (can exceed with level-up growth).
+
+**Alternatives Considered**: Raw score linear addition — simpler, but doesn't produce the familiar modifier feel. Dice pool (Xd6 successes) — interesting but diverges from the "D&D-style" spec input.
+
+---
+
+## R-012: Party Structure — PC, Escort, Adventurers
+
+**Decision**: The party always has exactly one **PC** (Player Character — the hero/leader) and one **Escort** (the person being protected to the destination tile). Up to 6 additional **Adventurers** may join through recruitment, for a maximum party size of 8.
+
+**Run-end conditions**:
+- PC dies → run ends ("your journey is over")
+- Escort dies → run ends ("you have failed your charge")
+- Adventurer dies → run continues; death is permanent and recorded with `{ coord, turn }`
+
+**Death record design**: Every `Character` carries a `deathRecord: DeathRecord | null`. In Casual mode, reloading a prior save will restore a dead Escort or PC, but Adventurer death records persist across reloads (they are written to a separate `deathHistory` log in `SaveState`).
+
+**Alternatives Considered**: Flat roster (any character = run end on last survivor) — simpler, but loses the escort protection objective and the stakes asymmetry. Revert to "last character standing" — removes the thematic journey arc.
+
+---
+
+## R-013: Mode Behavior — Save-Driven Recovery
+
+**Decision**: Mode distinction is entirely about save behavior. No auto-recovery mechanic exists.
+
+- **Casual**: Manual save permitted any time outside combat. Player may reload any prior save to undo losses. Adventurer death records survive reloads (written to permanent `deathHistory[]`). Save scumming is intentionally permitted and is the recovery mechanism.
+- **Roguelike**: Auto-save only (on phase transition and tile movement). PC or Escort death permanently invalidates the save file (`saveState.invalidated = true`). The game detects this on load and presents a run-over screen rather than resuming.
+
+**Flag on SaveState**: `invalidated: boolean` — set to `true` on Roguelike PC/Escort death. Checked before any load attempt.
+
+**Alternatives Considered**: Auto-recovery to 1 HP — rejected; recovery should cost player decision-making (reloading a save to an earlier state). Hospital/rest mechanic — deferred to a future version.

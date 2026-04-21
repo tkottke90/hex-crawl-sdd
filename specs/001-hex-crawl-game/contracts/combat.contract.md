@@ -29,6 +29,8 @@ interface CombatModule {
   getMovementRange(characterId: string): HexTile[];
   /** Returns valid attack targets for a given unit from a given position */
   getAttackTargets(characterId: string, fromCoord: HexCoord): string[];
+  /** Returns player-controlled unit IDs during Player Phase; empty array during Enemy Phase. Satisfies FR-004b. */
+  getPlayerControllableUnits(): string[];
 }
 
 interface EncounterConfig {

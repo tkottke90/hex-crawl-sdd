@@ -39,7 +39,7 @@
 - [ ] CHK021 — Is simultaneous last-character death in Roguelike mode covered — does FR-014 address whether a run ends when the final action kills all remaining characters at once? [Clarity, Spec §FR-014, Ambiguity]
 - [ ] CHK022 — Is "persistently displayed in the HUD" (FR-015) expressed with layout or position requirements, or is placement left entirely to implementation? [Clarity, Spec §FR-015, Gap]
 - [ ] CHK023 — Is "classic high fantasy tone" (FR-016) expressed with any measurable visual or UX criteria beyond aesthetic description? [Clarity, Spec §FR-016, Measurability]
-- [ ] CHK024 — Are file format, naming convention, and version stamp specified for exported save files (FR-010) — or is "downloadable file" the only constraint? [Clarity, Spec §FR-010, Ambiguity]
+- [X] CHK024 — Are file format, naming convention, and version stamp specified for exported save files (FR-010) — or is "downloadable file" the only constraint? [Clarity, Spec §FR-010, Ambiguity]
 - [ ] CHK025 — Is "100% of game state" (SC-004) defined with a concrete list of fields that must round-trip through export/import? [Clarity, Spec §SC-004, Ambiguity]
 - [ ] CHK026 — Is the start event for the "under 3 minutes" success criterion (SC-001) defined — browser tab open, first click, or game fully loaded? [Clarity, Spec §SC-001, Ambiguity]
 - [ ] CHK027 — Are the mechanical impacts of core attributes (STR, DEX, CON, etc.) on dice roll calculations documented anywhere in the spec or contracts? [Clarity, Spec §FR-005, Key Entities – Character, Gap]
@@ -48,10 +48,10 @@
 
 ## Requirement Consistency
 
-- [ ] CHK028 — Does FR-009 ("auto-save on each Enemy Phase end") align with US4-Scenario-5 ("resumes from last auto-save checkpoint") — do "continuous event-driven saves" and "checkpoint" refer to the same thing? [Consistency, Spec §FR-009, US4-Scenario-5]
+- [X] CHK028 — Does FR-009 ("auto-save on each Enemy Phase end") align with US4-Scenario-5 ("resumes from last auto-save checkpoint") — do "continuous event-driven saves" and "checkpoint" refer to the same thing? [Consistency, Spec §FR-009, US4-Scenario-5]
 - [ ] CHK029 — Are FR-012a (towns) and FR-012b (rare encounters) sufficient to grow a party from 2 to 8 — is it possible for neither path to yield enough recruits across a run? [Consistency, Spec §FR-012, FR-012a, FR-012b]
 - [ ] CHK030 — Is multi-tier promotion consistently modeled: FR-007 permits multiple evolutions, but Key Entities – Class defines one promotionThresholds field — are multiple promotions per character accounted for? [Consistency, Spec §FR-007, Key Entities – Class]
-- [ ] CHK031 — Do US3-Scenario-2 ("at least two promotion options") and FR-007 ("at least two class-evolution paths") consistently reference the same threshold and minimum count? [Consistency, Spec §FR-007, US3-Scenario-2]
+- [X] CHK031 — Do US3-Scenario-2 ("at least two promotion options") and FR-007 ("at least two class-evolution paths") consistently reference the same threshold and minimum count? [Consistency, Spec §FR-007, US3-Scenario-2]
 - [ ] CHK032 — FR-003 grants stat block access "at any time outside combat" and FR-004b allows observation during enemy phase — are stat block access requirements consistent for in-combat observation mode? [Consistency, Spec §FR-003, FR-004b]
 - [ ] CHK033 — Edge Cases lists incompatible save file version load, but FR-008 through FR-011 contain no version mismatch handling requirements — is this intentionally deferred or an unresolved gap? [Consistency, Spec §Edge Cases, FR-011, Gap]
 
@@ -109,7 +109,7 @@
 ## Dependencies & Assumptions
 
 - [ ] CHK063 — Is the "mobile/touch out of scope" assumption reflected with explicit exclusion language in any FR, or could an FR inadvertently imply responsive/touch UI? [Assumption, Spec §Assumptions]
-- [ ] CHK064 — Is the "audio is a stretch goal" stance consistently applied across all FRs — do any FRs or success criteria implicitly depend on audio for UX feedback that would fail silently without it? [Assumption, Spec §FR-016, Gap]
+- [X] CHK064 — Is the "audio is a stretch goal" stance consistently applied across all FRs — do any FRs or success criteria implicitly depend on audio for UX feedback that would fail silently without it? [Assumption, Spec §FR-016, Gap]
 - [ ] CHK065 — Is the composable `MetaProgressionModule` interface requirement (Constitution Principle IV) expressed with a concrete contract stub, or only as a narrative assumption? [Dependency, Spec §Assumptions, Key Entities – MetaProgressionModule]
 - [ ] CHK066 — Is the PhaserJS 3 dependency pinned to a specific version, and are any known v3 API deprecation risks within v1 scope documented? [Dependency, Spec §Assumptions, Gap]
-- [ ] CHK067 — Is the "no server dependency" assumption validated against all FRs — could any FR implicitly rely on network access (CDN fonts, external assets) that contradicts the local-first guarantee? [Assumption, Spec §FR-001, Spec §Assumptions]
+- [X] CHK067 — Is the "no server dependency" assumption validated against all FRs — could any FR implicitly rely on network access (CDN fonts, external assets) that contradicts the local-first guarantee? [Assumption, Spec §FR-001, Spec §Assumptions]

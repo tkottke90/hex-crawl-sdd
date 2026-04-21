@@ -24,9 +24,9 @@ interface Attributes {
 ```
 
 **Derived values** (computed, not stored):
-- `hitBonus = Math.floor((str - 10) / 2)`
-- `defenseBonus = Math.floor((dex - 10) / 2)`
-- `maxHp` is class-derived + CON modifier
+- `attackModifier = Math.floor((str - 10) / 2)` (STR for melee; DEX for ranged)
+- `defenseValue = 10 + Math.floor((dex - 10) / 2)` (base AC equivalent)
+- `maxHp` is class-derived (`maxHpBase + maxHpGrowth * level`) + CON modifier per level
 
 ---
 
@@ -63,12 +63,30 @@ base class (level 1–10) ──[level promotionLevel, player chooses]──► 
 ## 3. Character
 
 ```typescript
-type RecruitmentSource = 'hired' | 'encountered';
-type CharacterStatus = 'active' | 'incapacitated' | 'dead';
+type CharacterRole = 'pc' | 'escort' | 'adventurer';
+// pc        — the player's hero; PC death always ends the run
+// escort    — the person being protected; Escort death = mission failed, run ends
+// adventurer — recruited companions; their deaths are permanent but do NOT end the run
+
+type RecruitmentSource = 'starting' | 'hired' | 'encountered';
+// starting  — PC and Escort are always present from run start
+// hired     — recruited at a town
+// encountered — recruited via rare combat event
+
+type CharacterStatus = 'active' | 'dead';
+// Casual mode: player may reload a prior save when PC or Escort dies (no auto-recovery)
+// Roguelike mode: PC or Escort death permanently invalidates the save
+// Adventurer death: permanent in both modes
+
+interface DeathRecord {
+  coord: HexCoord;              // where they fell
+  turn: number;                 // global turn counter at time of death
+}
 
 interface Character {
   id: string;                   // uuid
   name: string;
+  role: CharacterRole;          // pc | escort | adventurer
   classId: string;              // ref ClassDefinition.id
   level: number;                // 1–20
   xp: number;                   // current XP within current level
@@ -281,9 +299,13 @@ type GameModeType = 'casual' | 'roguelike';
 
 interface GameMode {
   type: GameModeType;
-  deathHandling: 'incapacitate' | 'permadeath';
+  // Death consequences:
+  //   casual    — PC/Escort death prompts player to reload a prior save (no auto-recovery)
+  //               Adventurer deaths are always permanent regardless of reloads
+  //   roguelike — PC or Escort death permanently invalidates the save (unplayable)
+  //               All Adventurer deaths are permanent and recorded
   allowManualSave: boolean;     // true = casual, false = roguelike
-  autoSaveOnCheckpoint: boolean;
+  autoSaveOnCheckpoint: boolean; // roguelike: saves on phase transition + tile movement
 }
 ```
 
@@ -296,7 +318,9 @@ interface SaveState {
   version: number;              // migration version (R-008)
   gameMode: GameMode;
   worldMap: WorldMap;
-  party: Character[];           // 2–8 characters
+  party: Character[];           // 2–8 characters; always includes exactly one 'pc' and one 'escort'
+  deathHistory: DeathRecord[];  // permanent log of fallen Adventurers; survives Casual save reloads
+  invalidated: boolean;         // Roguelike: true after PC or Escort death — save is unplayable
   towns: Town[];
   enemyCamps: EnemyCamp[];
   activeCombat: CombatEncounter | null;
@@ -329,9 +353,12 @@ interface MetaProgressionModule {
 SaveState
 ├── GameMode
 ├── WorldMap ──► HexTile[]
-├── Character[] (party, 2–8)
+├── Character[] (party, 2–8; roles: pc × 1, escort × 1, adventurers × 0–6)
 │   ├── ClassDefinition (ref by classId)
-│   └── StatusEffect[]
+│   ├── StatusEffect[]
+│   └── DeathRecord | null
+├── deathHistory: DeathRecord[]  (permanent log — survives Casual reloads)
+├── invalidated: boolean          (Roguelike run-end flag)
 ├── Town[] ──► HireableHero[]
 ├── EnemyCamp[] ──► EnemyUnit[]
 ├── CombatEncounter (nullable)
