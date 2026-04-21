@@ -112,6 +112,8 @@ re-center button (bottom-right) triggers an ease-out tween back to the active ch
   tile is centered in the viewport before the first interactive frame is presented to the player.
 - **FR-002**: When the active character moves to a new tile, the camera MUST begin a smooth
   tween to center on the destination tile immediately after movement is committed.
+  "Committed" means the moment `moveOccupant()` records the new tile (before any sprite
+  animation plays) — the camera tween starts in the same frame as the logical move.
 - **FR-003**: The follow tween MUST use an ease-out curve (fast start, decelerating into the
   destination). For a single-tile move the tween MUST complete within 400 ms. For multi-tile
   moves the duration MUST scale linearly with tile count, capped at a maximum of 600 ms,
@@ -129,8 +131,9 @@ re-center button (bottom-right) triggers an ease-out tween back to the active ch
 - **FR-009**: When the active character moves, the camera MUST resume follow behavior and tween
   to the character's new tile regardless of whether the camera was manually panned.
 - **FR-013**: A persistent re-center button MUST be displayed in the bottom-right corner of the
-  viewport at all times during world map navigation. Activating it MUST immediately begin an
-  ease-out tween to center the camera on the active character's tile and resume follow mode.
+  viewport at all times during world map navigation. Activating it MUST immediately begin a
+  300 ms ease-out tween to center the camera on the active character's tile and resume follow
+  mode. The visual design (icon, label) is left to implementation.
 - **FR-010**: The camera MUST be clamped to the map's renderable boundaries; it MUST NOT scroll
   to reveal empty space beyond the map edges.
 - **FR-011**: Zoom (pinch, scroll-wheel, keyboard zoom) is explicitly OUT OF SCOPE for v1 and
@@ -189,11 +192,14 @@ re-center button (bottom-right) triggers an ease-out tween back to the active ch
   in feature `001-hex-crawl-game`; this feature adds only camera behavior on top of it.
 - The game renders at a target of 60 fps; 400 ms tween durations are calibrated to this but
   remain smooth down to 30 fps.
-- There is always exactly one "active character" token at any point during world map navigation;
-  the active character is unambiguously identifiable by the existing turn/selection system.
+- There is always exactly one active character token during world map navigation **after the
+  scene has finished loading**. At the very start of `create()`, before party construction
+  completes, the active character may be temporarily null; the camera MUST NOT center or pan
+  until the active character is set. Once set, the invariant holds for the remainder of the
+  session.
 - Re-centering is available via both implicit trigger (character moves) and a persistent UI button
   in the bottom-right corner of the viewport. The button is always visible during world map
-  navigation; its visual design (icon, label) is left to implementation.
+  navigation. Its visual design (icon, label) is left to implementation.
 - Mobile / touch pan gestures are out of scope for v1; only keyboard pan input is required.
 - Diagonal Arrow / WASD combinations (e.g. Up + Right simultaneously) MUST scroll the camera
   diagonally; this is standard behavior and no clarification is needed.

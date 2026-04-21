@@ -33,7 +33,8 @@ interface CameraState {
 
   /**
    * Reference to the active character whose tile position the camera follows.
-   * null only before the scene is fully initialised.
+   * null only during the brief window between scene init and party construction
+   * completing. Camera centering must be deferred until this is non-null.
    */
   followTargetId: string | null;
 

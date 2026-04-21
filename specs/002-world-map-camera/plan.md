@@ -141,6 +141,8 @@ export interface CameraKeys {
 
 1. **`create()`** — after `renderMap()`:
    - Construct `CameraController`, call `setBounds(tiles)`, call `centerOn(activeCharWorldPos)`.
+   - Guard: `centerOn` is called only after `buildParty()` completes and `selectedChar` is
+     non-null; if null (should not occur under normal flow), skip centering silently.
    - Render re-center button DOM element.
 2. **`onTileClick()`** — after `moveOccupant()`:
    - Call `cameraController.followTo(dest, pathLength)`.
@@ -148,6 +150,26 @@ export interface CameraKeys {
    - Call `cameraController.update(keys, delta)`.
 4. **Re-center button click handler**:
    - Call `cameraController.reCenterOn(activeCharCoord)`.
+5. **`shutdown()`** — existing teardown method:
+   - Remove the re-center button DOM element (same pattern as `saveBar` teardown: `reCenterBtn.remove(); reCenterBtn = null`).
+   - The `CameraController` instance is GC'd with the scene; no explicit dispose needed.
+
+### Coordinate Refactor Scope & Rollback Criteria (R-002)
+
+The existing `WorldMap.ts` adds `this.scale.width / 2` and `this.scale.height / 2` to every tile
+and sprite pixel position in `renderMap()` and `renderParty()`. This must be removed so that
+objects render at raw `toPixel()` world coordinates and the Phaser camera handles viewport
+positioning.
+
+**Files changed**:
+- `src/game/scenes/WorldMap.ts` — `renderMap()` and `renderParty()`, plus the hit-area `offsetX/offsetY` additions inside `renderMap()`.
+
+**Rollback criteria** — revert R-002 if any of the following occur after the change:
+- Tiles render off-screen or at incorrect positions in the `smoke.spec.ts` e2e test.
+- The `#btn-save-game` element is no longer visible in Playwright (save-bar uses DOM positioning, unaffected, but verifies the scene loaded correctly).
+- Unit tests in `tests/unit/hex-grid/` fail due to unexpected pixel coordinate values.
+
+**Risk mitigation**: The refactor must be done as a single atomic commit before any camera code is added, with the full existing test suite run to establish a green baseline before camera features are built on top.
 
 ### Constitution Re-Check (Post-Design)
 
