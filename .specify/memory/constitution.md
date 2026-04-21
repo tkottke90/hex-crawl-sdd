@@ -1,50 +1,73 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+  SYNC IMPACT REPORT
+  Version change: (unversioned) → 1.0.0
+  Added sections: Core Principles (I–III), Tech Stack, Development Workflow, Governance
+  Removed sections: N/A (initial fill)
+  Templates checked:
+    ✅ plan-template.md — Constitution Check section present; no updates needed
+    ✅ spec-template.md — no principle-driven mandatory sections changed
+    ✅ tasks-template.md — no new principle-driven task types required
+  Deferred TODOs: None
+-->
+
+# My First Hex Game Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Simple & Playable First
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+A working game loop MUST exist before any polish, optimization, or advanced feature
+is added. YAGNI applies at every milestone: only build what the current user story
+requires. Complexity MUST be justified by a concrete, testable need — not speculation.
+Every feature branch MUST leave the game in a playable state when merged.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Test-Driven Development (NON-NEGOTIABLE)
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+Tests MUST be written and approved before implementation begins.
+The Red-Green-Refactor cycle is strictly enforced:
+- Write a failing test that captures the requirement.
+- Implement the minimum code to make it pass.
+- Refactor without changing observable behavior.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+No production code may be merged without a corresponding passing test.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+### III. Component/Module Separation
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+Game logic, rendering, and input handling MUST be implemented as independent modules
+with explicit, stable interfaces between them. No module may directly reference the
+internals of another. This enables independent testing of each concern and makes
+future renderer or input swaps non-breaking.
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+## Tech Stack
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+- **Language**: TypeScript (strict mode enabled)
+- **Runtime**: Browser (no Node.js server required)
+- **Testing**: Vitest (unit) + Playwright (e2e/integration)
+- **Bundler**: Vite
+- **Target Browsers**: Modern evergreen (Chrome, Firefox, Safari, Edge — latest 2 versions)
+- **Performance Goal**: Stable 60 fps on mid-range hardware
+
+## Development Workflow
+
+- All work MUST happen on a feature branch following the naming convention
+  `###-short-description` (sequential numbering).
+- A Constitution Check MUST be performed in every plan.md before implementation begins,
+  verifying the planned approach complies with Principles I–III.
+- PRs MUST NOT be merged if any test is failing or if the game is left in a
+  non-playable state.
+- Complexity exceeding a single user story MUST be split into additional stories
+  before implementation.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+This constitution supersedes all other development practices. Amendments require:
+1. A documented rationale explaining what changed and why.
+2. A version bump following semantic versioning:
+   - MAJOR: removal or redefinition of a principle.
+   - MINOR: new principle or section added.
+   - PATCH: clarifications, wording, or formatting changes.
+3. A migration plan if existing code is affected.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+All plan reviews MUST include a Constitution Check verifying compliance.
+
+**Version**: 1.0.0 | **Ratified**: 2026-04-21 | **Last Amended**: 2026-04-21
