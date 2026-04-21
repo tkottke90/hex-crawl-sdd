@@ -124,7 +124,7 @@
 
 - [x] T032 [P] Add unit test assertions for the two state transitions NOT covered by T023: (1) free-pan → follow when `followTo()` is called; (2) free-pan → follow when `reCenterOn()` completes — `_freePanActive` must be `false` after each — `tests/unit/camera/CameraController.test.ts`
 - [x] T033 [P] Audit `WorldMap.ts` for any remaining references to `this.scale.width / 2` or `this.scale.height / 2` used for tile/sprite positioning (there should be none after T005–T006); fix any missed occurrences — `src/game/scenes/WorldMap.ts`
-- [ ] T034 Run full `vitest run` + `playwright test` suite and confirm all tests pass with no regressions in existing `smoke.spec.ts`, `new-game.spec.ts`, and `perf-*.spec.ts` files
+- [x] T034 Run full `vitest run` + `playwright test` suite and confirm all tests pass with no regressions in existing `smoke.spec.ts`, `new-game.spec.ts`, and `perf-*.spec.ts` files
 - [x] T035 [P] Write Playwright test: iterate 50 deterministic PRNG seeds, load the world map for each, and assert `camera.worldView` never extends beyond the rect computed by `setBounds()` on any seed — validates SC-005 (no boundary violations across varied map generations) — `tests/e2e/camera.spec.ts`
 
 ---
