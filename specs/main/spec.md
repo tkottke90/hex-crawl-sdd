@@ -24,6 +24,8 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 
 - **FR-001**: The game MUST render a fully procedural hex-tile world map in the browser without server dependency. A new map MUST be generated at the start of every run. Unvisited tiles MUST remain hidden by fog-of-war until revealed.
 - **FR-001a**: The generator MUST place towns, enemy encounters, terrain types, and points of interest using seeded randomness so a given seed produces the same map.
+- **FR-001b**: Every world map tile MUST render terrain-specific pixel artwork so the player can identify terrain type at a glance without a legend. Each terrain type MUST have visually distinct artwork.
+- **FR-001c**: World map hexes MUST be rendered at twice the hex radius size so each tile has sufficient visual space for readable terrain artwork.
 - **FR-002**: The game MUST support exactly two modes: Casual and Roguelike, selectable at new-game creation.
 - **FR-003**: Character stat blocks MUST be fully visible outside combat, including name, role, class, level, XP, HP, and core attributes.
 - **FR-004**: Combat MUST be tactical and phase-based on a hex grid. All player units act during the Player Phase, then all enemy units act during the Enemy Phase; phases alternate until combat resolves.
@@ -62,7 +64,7 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 
 - **Character**: Name, role (PC, Escort, Adventurer), class, level, XP, HP, attributes, defense, equipment slots, portrait, status effects, recruitment source, and death record.
 - **Party**: The full set of player-controlled characters. The party shares a single world-map tile.
-- **HexTile**: Coordinates, terrain type, passability, movement cost, occupants, point of interest, visual state, and fog-of-war state.
+- **HexTile**: Coordinates, terrain type, passability, movement cost, occupants, point of interest, terrain artwork key, visual state, and fog-of-war state.
 - **WorldMap**: Seed, dimensions, hex collection, placed towns, placed encounters, and generation parameters.
 - **Camera**: The viewport into the world map. It can follow an active character, pan manually, and clamp to map boundaries.
 - **CombatEncounter**: Participating units, phase, acting queue, round count, combat log, and resolution state.
@@ -77,6 +79,7 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 ### Measurable Outcomes
 
 - **SC-001**: A new player can go from launching the game to the first combat action in under 3 minutes.
+- **SC-001a**: On world map load, 100% of visible tiles render terrain-specific artwork. In an automated render analysis of a fixed-seed map, average pixel variance inside visible tile bounds is at least 50% above the flat-fill baseline.
 - **SC-002**: The active character's tile is centered in the viewport on the first interactive frame after world-map load.
 - **SC-003**: Camera follow tween completes within 400 ms for single-tile moves and within 600 ms for multi-tile moves under normal gameplay conditions.
 - **SC-004**: Manual pan input begins within one rendered frame of a key press.

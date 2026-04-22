@@ -123,6 +123,16 @@
 
 ---
 
+### Step 10 - Retrospective (Custom Step)
+
+I added this step as part of the workflow to allow me to reflect on what went well and what needed additional work after the implementation was complete.  This is not part of the GitHub Spec Kit workflow but felt like a useful addition to capture learnings and inform future iterations.
+
+- Create a `retro.md` file in the feature folder
+- Document the original problem statement, what went well, what went wrong, and any specific issues that came up during implementation (e.g. the tile hitbox issue I encountered with this feature)
+- Use this retrospective to inform future implementations and share learnings with the team
+
+---
+
 ## Quick Reference Table
 
 | Step | Command | What it produces | Modifies files? |
