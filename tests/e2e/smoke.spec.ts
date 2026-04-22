@@ -131,6 +131,9 @@ test.describe('Smoke — New Game flow', () => {
     // Save bar is present for Casual mode
     await expect(page.locator('#btn-save-game')).toBeVisible();
     await expect(page.locator('#btn-export-save')).toBeVisible();
+    // Seed info card must be visible showing CASUAL mode indicator
+    await expect(page.locator('#seed-info-card')).toBeVisible();
+    await expect(page.locator('#seed-info-card [data-mode="casual"]')).toBeVisible();
   });
 
   test('back buttons return to previous screen', async ({ page }) => {
@@ -150,8 +153,9 @@ test.describe('Smoke — New Game flow', () => {
     await page.locator('.class-card').first().click();
     // WorldMap loads — roguelike shows auto-save note, not manual save button
     await expect(page.locator('canvas')).toBeVisible({ timeout: 15_000 });
-    // Mode label badge should be visible
-    await expect(page.locator('#mode-label')).toBeVisible({ timeout: 10_000 });
+    // Seed info card with roguelike mode badge should be visible
+    await expect(page.locator('#seed-info-card')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#seed-info-card [data-mode="roguelike"]')).toBeVisible();
   });
 });
 

@@ -1,5 +1,5 @@
 <!-- SPECKIT START -->
 For additional context about technologies to be used, project structure,
 shell commands, and other important information, read the current plan:
-specs/004-world-map-detail/plan.md
+specs/005-random-map-generation/plan.md
 <!-- SPECKIT END -->

@@ -23,7 +23,10 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 ### Functional Requirements
 
 - **FR-001**: The game MUST render a fully procedural hex-tile world map in the browser without server dependency. A new map MUST be generated at the start of every run. Unvisited tiles MUST remain hidden by fog-of-war until revealed.
-- **FR-001a**: The generator MUST place towns, enemy encounters, terrain types, and points of interest using seeded randomness so a given seed produces the same map.
+- **FR-001a**: The generator MUST place towns, enemy encounters, terrain types, and points of interest using seeded randomness so a given seed produces the same map. The seed MUST be a base-36 alphanumeric string unique to each new run.
+- **FR-001b-map**: Every new game MUST generate a different seed so no two consecutive runs produce the same inner terrain layout. Restoring a save MUST reconstruct the map from the saved seed exactly.
+- **FR-001c-border**: The outermost two tile-layers of every generated map MUST be water terrain and MUST be impassable, regardless of what the noise function assigns to those coordinates.
+- **FR-001d-start**: The player starting tile MUST be located in the bottom half of the map height and within the center horizontal half of the map width (center 50%). The start tile MUST be passable. If no passable tile exists in the region, the tile closest to the center-bottom point is forced passable.
 - **FR-001b**: Every world map tile MUST render terrain-specific pixel artwork so the player can identify terrain type at a glance without a legend. Each terrain type MUST have visually distinct artwork.
 - **FR-001c**: World map hexes MUST be rendered at twice the hex radius size so each tile has sufficient visual space for readable terrain artwork.
 - **FR-002**: The game MUST support exactly two modes: Casual and Roguelike, selectable at new-game creation.
@@ -56,7 +59,7 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 - **FR-014a**: Adventurer deaths MUST be permanent in both modes and MUST be recorded with hex coordinates and the turn number. Casual reloads MUST not erase that death history.
 - **FR-015**: The run MUST end immediately when the Player Character dies or when the Escort dies.
 - **FR-015a**: After a combat victory, the game MUST show a Victory Summary screen before returning to the world map. The summary MUST show enemies defeated, XP earned per character, and any deaths from the encounter.
-- **FR-016**: The active game mode MUST always be visible in the HUD.
+- **FR-016**: The active game mode and the current run seed MUST always be visible in the HUD while the world map is displayed. Both MUST be shown in a single card-style info panel in the top-right corner of the screen. The mode pill MUST use distinct colors for Casual (green) and Roguelike (red). After a save/load cycle, the seed card MUST display the same seed value that was shown before saving.
 - **FR-017**: The game's visual tone SHOULD remain classic high fantasy with a medieval, journey-focused feel. Audio is a stretch goal and not required for the core loop.
 - **FR-018**: The game MUST retain a `MetaProgressionModule` extension point, but v1 MUST persist only an empty record so that future carry-over systems can be added without refactoring the save contract.
 
@@ -65,7 +68,7 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 - **Character**: Name, role (PC, Escort, Adventurer), class, level, XP, HP, attributes, defense, equipment slots, portrait, status effects, recruitment source, and death record.
 - **Party**: The full set of player-controlled characters. The party shares a single world-map tile.
 - **HexTile**: Coordinates, terrain type, passability, movement cost, occupants, point of interest, terrain artwork key, visual state, and fog-of-war state.
-- **WorldMap**: Seed, dimensions, hex collection, placed towns, placed encounters, and generation parameters.
+- **WorldMap**: Seed (base-36 alphanumeric string), dimensions, hex collection, placed towns, placed encounters, and generation parameters. The seed is stored in save state and used to reconstruct the map on load.
 - **Camera**: The viewport into the world map. It can follow an active character, pan manually, and clamp to map boundaries.
 - **CombatEncounter**: Participating units, phase, acting queue, round count, combat log, and resolution state.
 - **DiceRoll**: Roll type, notation, individual results, modifier breakdown, and total.
@@ -80,7 +83,7 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 
 - **SC-001**: A new player can go from launching the game to the first combat action in under 3 minutes.
 - **SC-001a**: On world map load, 100% of visible tiles render terrain-specific artwork. In an automated render analysis of a fixed-seed map, average pixel variance inside visible tile bounds is at least 50% above the flat-fill baseline.
-- **SC-002**: The active character's tile is centered in the viewport on the first interactive frame after world-map load.
+- **SC-002**: The active character's tile is centered in the viewport on the first interactive frame after world-map load. The starting tile MUST be in the bottom half of the map height and within the center horizontal half of the map width.
 - **SC-003**: Camera follow tween completes within 400 ms for single-tile moves and within 600 ms for multi-tile moves under normal gameplay conditions.
 - **SC-004**: Manual pan input begins within one rendered frame of a key press.
 - **SC-005**: Clicking any reachable destination moves 100 percent of party members to the same tile with no character left behind.
@@ -91,6 +94,9 @@ The game is a local-first, single-player browser hex crawl with a classic fantas
 - **SC-010**: All stat values, dice components, and death records are visible to the player when relevant.
 - **SC-011**: Death markers from saved runs render on the world map within one render frame of scene readiness.
 - **SC-012**: No camera boundary violations occur in automated tests across varied map seeds.
+- **SC-013**: On any generated map, all tiles in the outermost two tile-layers have `terrain === 'ocean'` and `passable === false`.
+- **SC-014**: Across any five distinct seeds, `playerStartCoord` satisfies `coord.r >= Math.floor(height / 2)` and the derived column index is within `[Math.floor(width / 4), width - Math.floor(width / 4))`.
+- **SC-015**: The seed info card is visible on the world map for both new games and loaded saves, and its displayed seed value matches the seed in save state.
 
 ## Assumptions
 

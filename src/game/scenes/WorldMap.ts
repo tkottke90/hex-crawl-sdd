@@ -6,7 +6,7 @@ import { BASE_CLASSES, getClassById } from '../../data/classes';
 import { Toast } from '../ui/Toast';
 import { ESCORT_TEMPLATE } from '../../data/escort';
 import { StatPanel } from '../ui/StatPanel';
-import { ModeLabel } from '../ui/ModeLabel';
+import { SeedInfoCard } from '../ui/SeedInfoCard';
 import { TurnBudgetLabel } from '../ui/TurnBudgetLabel';
 import { TownPanel } from '../ui/TownPanel';
 import type { Character } from '../../models/character';
@@ -64,7 +64,7 @@ export class WorldMap extends Phaser.Scene {
   private hoverPreviewOverlay: Phaser.GameObjects.Graphics | null = null;
   private hoveredTileCoord: HexCoord | null = null;
   private statPanel!: StatPanel;
-  private modeLabel!: ModeLabel;
+  private seedInfoCard!: SeedInfoCard;
   private turnBudgetLabel: TurnBudgetLabel | null = null;
   private turnBudgetManager!: TurnBudgetManager;
   private deathMarkerStore = new DeathMarkerStore();
@@ -91,7 +91,6 @@ export class WorldMap extends Phaser.Scene {
   create(): void {
     const mode = (this.registry.get('gameMode') as GameModeType | undefined) ?? 'casual';
     this.registry.set('gameMode', mode); // normalise
-    this.modeLabel = new ModeLabel(mode);
     const playerClassId = this.registry.get('playerClassId') as string ?? 'fighter';
 
     const savedState = this.registry.get('saveState');
@@ -101,8 +100,9 @@ export class WorldMap extends Phaser.Scene {
       return;
     }
 
-    const seed = `run_${Date.now()}`;
+    const seed = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
     const worldMapData = generateMap(seed, MAP_WIDTH, MAP_HEIGHT);
+    this.seedInfoCard = new SeedInfoCard(mode, seed);
     this.hexModule = createHexGridModule(worldMapData);
 
     this.buildParty(playerClassId, worldMapData.playerStartCoord);
@@ -128,6 +128,7 @@ export class WorldMap extends Phaser.Scene {
   }
 
   private restoreFromSave(saveState: SaveState): void {
+    this.seedInfoCard = new SeedInfoCard(saveState.gameMode.type, saveState.worldMap.seed);
     this.party = saveState.party;
     this.hexModule = createHexGridModule(saveState.worldMap);
     this.towns = saveState.towns;
@@ -945,7 +946,7 @@ export class WorldMap extends Phaser.Scene {
     this.hoverPreviewOverlay?.destroy();
     this.hoverPreviewOverlay = null;
     if (this.statPanel) this.statPanel.destroy();
-    if (this.modeLabel) this.modeLabel.destroy();
+    if (this.seedInfoCard) this.seedInfoCard.destroy();
     if (this.turnBudgetLabel) { this.turnBudgetLabel.destroy(); this.turnBudgetLabel = null; }
     if (this.saveBar) { this.saveBar.remove(); this.saveBar = null; }
     if (this.townPanel) { this.townPanel.destroy(); this.townPanel = null; }

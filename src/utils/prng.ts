@@ -7,10 +7,11 @@ export class PRNG {
 
   constructor(seed: string) {
     this.s = new Uint32Array(4);
-    // Simple string hash to initialise the 4 state words
+    // Simple string hash to initialise the 4 state words.
+    // NOTE: 0x517cc1b727220a95 loses precision as float64; use the correct lower-32 bits directly.
     let h = 0x9e3779b9;
     for (let i = 0; i < seed.length; i++) {
-      h = Math.imul(h ^ seed.charCodeAt(i), 0x517cc1b727220a95 | 0);
+      h = Math.imul(h ^ seed.charCodeAt(i), 0x27220a95);
     }
     // Splitmix32 to fill 4 words from h
     for (let i = 0; i < 4; i++) {

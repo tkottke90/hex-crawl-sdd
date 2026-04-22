@@ -1,5 +1,5 @@
 import type { WorldMap } from '../../models/world-map';
-import type { HexTile, TerrainType } from '../../models/hex';
+import type { HexTile, HexCoord, TerrainType } from '../../models/hex';
 import { createNoise2D } from '../../utils/noise';
 
 function tileKey(q: number, r: number, s: number): string {
@@ -24,9 +24,22 @@ function moveCost(terrain: TerrainType): number {
   }
 }
 
+function isBorderTile(coord: HexCoord, width: number, height: number): boolean {
+  const qi = coord.q + Math.floor(coord.r / 2);
+  return coord.r < 2 || coord.r >= height - 2 || qi < 2 || qi >= width - 2;
+}
+
+function isInStartRegion(coord: HexCoord, width: number, height: number): boolean {
+  const qi = coord.q + Math.floor(coord.r / 2);
+  const qMin = Math.floor(width / 4);
+  const qMax = width - Math.floor(width / 4);
+  return coord.r >= Math.floor(height / 2) && qi >= qMin && qi < qMax;
+}
+
 /**
  * Generate a hex map using two noise passes (elevation + moisture).
  * Island shaping: distance from centre reduces elevation, creating ocean borders.
+ * Post-processing: outer two tile-layers forced to ocean; player start placed in bottom-center region.
  */
 export function generateMap(seed: string, width: number, height: number): WorldMap {
   const elevationNoise = createNoise2D(`${seed}:elevation`);
@@ -36,8 +49,6 @@ export function generateMap(seed: string, width: number, height: number): WorldM
   const cx = Math.floor(width / 2);
   const cy = Math.floor(height / 2);
   const maxDist = Math.min(cx, cy) * 0.9;
-
-  let passableStart: { q: number; r: number; s: number } | null = null;
 
   for (let r = 0; r < height; r++) {
     // Offset for rectangular hex grid (axial coords)
@@ -70,18 +81,44 @@ export function generateMap(seed: string, width: number, height: number): WorldM
         fogOfWar: true,
         explored: false,
       };
-
-      if (passable && passableStart === null) {
-        passableStart = { q, r, s };
-      }
     }
   }
 
-  // Fallback: if somehow no passable tile found, use origin area
-  if (!passableStart) {
-    passableStart = { q: 0, r: 0, s: 0 };
-    tiles[tileKey(0, 0, 0)] = {
-      coord: { q: 0, r: 0, s: 0 },
+  // T006: Border post-processing pass — force outer two tile-layers to impassable ocean
+  for (const tile of Object.values(tiles)) {
+    if (isBorderTile(tile.coord, width, height)) {
+      tile.terrain = 'ocean';
+      tile.passable = false;
+      tile.moveCost = 1;
+    }
+  }
+
+  // T009: Start region selection — pick passable tile closest to center-bottom
+  const startCandidates = Object.values(tiles).filter(
+    (tile) => tile.passable && isInStartRegion(tile.coord, width, height),
+  );
+
+  let playerStartCoord: HexCoord;
+  if (startCandidates.length > 0) {
+    const best = startCandidates.reduce((prev, curr) => {
+      const pqi = prev.coord.q + Math.floor(prev.coord.r / 2);
+      const cqi = curr.coord.q + Math.floor(curr.coord.r / 2);
+      const pDist = Math.hypot(pqi - width / 2, prev.coord.r - (height - 1));
+      const cDist = Math.hypot(cqi - width / 2, curr.coord.r - (height - 1));
+      return cDist < pDist ? curr : prev;
+    });
+    playerStartCoord = best.coord;
+  } else {
+    // Fallback: force center-bottom tile to grassland
+    const fallbackQi = Math.floor(width / 2);
+    const fallbackR = height - 3;
+    const fallbackQOffset = Math.floor(fallbackR / 2);
+    const fallbackQ = fallbackQi - fallbackQOffset;
+    const fallbackS = -fallbackQ - fallbackR;
+    const fallbackKey = tileKey(fallbackQ, fallbackR, fallbackS);
+    playerStartCoord = { q: fallbackQ, r: fallbackR, s: fallbackS };
+    tiles[fallbackKey] = {
+      coord: playerStartCoord,
       terrain: 'grassland',
       passable: true,
       moveCost: 1,
@@ -99,6 +136,6 @@ export function generateMap(seed: string, width: number, height: number): WorldM
     tiles,
     towns: [],
     enemyCamps: [],
-    playerStartCoord: passableStart,
+    playerStartCoord,
   };
 }
