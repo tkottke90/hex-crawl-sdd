@@ -207,7 +207,19 @@ test.describe('Smoke — Save flow (Casual)', () => {
     const before = await page.evaluate(() => {
       const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
       const scene = g.scene.getScene('WorldMap') as unknown as {
-        _getWorldMapSnapshot: () => { remainingTurnBudget: number; partySize: number; activePartySize: number };
+        _getWorldMapSnapshot: () => {
+          remainingTurnBudget: number;
+          partySize: number;
+          activePartySize: number;
+          tileDisplaySize: number;
+          tileCount: number;
+          fogOfWarApplied: boolean;
+          visibleTerrainKinds: string[];
+          sampleTileFrame: number;
+          sampleTileTerrain: string | null;
+          sampleTileTextureKey: string | null;
+          partyMarkerWorldPos: { x: number; y: number } | null;
+        };
         _getActiveCharWorldPos: () => { x: number; y: number };
         _clickNeighbourTile: () => boolean;
       };
@@ -247,6 +259,13 @@ test.describe('Smoke — Save flow (Casual)', () => {
     expect(after.snapshot.partySize).toBe(before.snapshot.partySize);
     expect(after.snapshot.activePartySize).toBe(before.snapshot.activePartySize);
     expect(after.snapshot.remainingTurnBudget).toBeLessThan(before.snapshot.remainingTurnBudget);
+    expect(after.snapshot.tileDisplaySize).toBe(72);
+    expect(after.snapshot.tileCount).toBeGreaterThan(0);
+    expect(after.snapshot.fogOfWarApplied).toBe(false);
+    expect(after.snapshot.visibleTerrainKinds.length).toBeGreaterThan(1);
+    expect([0, 1]).toContain(after.snapshot.sampleTileFrame);
+    expect(after.snapshot.sampleTileTextureKey).toContain(after.snapshot.sampleTileTerrain ?? '');
+    expect(after.snapshot.partyMarkerWorldPos).toEqual(after.activePos);
     expect(after.activePos.x !== before.activePos.x || after.activePos.y !== before.activePos.y).toBe(true);
   });
 
@@ -263,7 +282,7 @@ test.describe('Smoke — Save flow (Casual)', () => {
     const snapshot = await page.evaluate(() => {
       const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
       const scene = g.scene.getScene('WorldMap') as unknown as {
-        _getWorldMapSnapshot: () => { remainingTurnBudget: number; deathMarkerCount: number; partySize: number };
+        _getWorldMapSnapshot: () => { remainingTurnBudget: number; deathMarkerCount: number; partySize: number; tileDisplaySize: number; fogOfWarApplied: boolean };
       };
       return scene._getWorldMapSnapshot();
     });
@@ -271,5 +290,7 @@ test.describe('Smoke — Save flow (Casual)', () => {
     expect(snapshot.remainingTurnBudget).toBe(1);
     expect(snapshot.deathMarkerCount).toBe(1);
     expect(snapshot.partySize).toBeGreaterThanOrEqual(1);
+    expect(snapshot.tileDisplaySize).toBe(72);
+    expect(snapshot.fogOfWarApplied).toBe(false);
   });
 });

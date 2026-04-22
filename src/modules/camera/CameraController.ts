@@ -70,10 +70,11 @@ export class CameraController {
     if (tiles.length === 0) return;
 
     const positions = tiles.map((t) => toPixel(t.coord, this._tileSize));
-    const minX = Math.min(...positions.map((p) => p.x)) - CAM_BOUND_PADDING;
-    const minY = Math.min(...positions.map((p) => p.y)) - CAM_BOUND_PADDING;
-    const maxX = Math.max(...positions.map((p) => p.x)) + CAM_BOUND_PADDING;
-    const maxY = Math.max(...positions.map((p) => p.y)) + CAM_BOUND_PADDING;
+    const padding = this._tileSize * 2;
+    const minX = Math.min(...positions.map((p) => p.x)) - padding;
+    const minY = Math.min(...positions.map((p) => p.y)) - padding;
+    const maxX = Math.max(...positions.map((p) => p.x)) + padding;
+    const maxY = Math.max(...positions.map((p) => p.y)) + padding;
 
     this._camera.setBounds(minX, minY, maxX - minX, maxY - minY);
   }
@@ -108,7 +109,7 @@ export class CameraController {
    * Handles keyboard pan — applies velocity directly to camera scrollX/scrollY.
    */
   update(keys: CameraKeys, delta: number): void {
-    const speed = PAN_SPEED * (delta / 1000);
+    const speed = (5 * this._tileSize) * (delta / 1000);
     const anyKey = keys.up || keys.down || keys.left || keys.right;
     this._freePanActive = anyKey;
 

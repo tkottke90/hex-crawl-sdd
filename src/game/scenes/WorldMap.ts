@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { generateMap } from '../../modules/hex-grid/MapGenerator';
 import { createHexGridModule } from '../../modules/hex-grid/index';
-import { neighbors, toPixel } from '../../modules/hex-grid/HexCoordUtils';
+import { neighbors, toPixel, fromPixel } from '../../modules/hex-grid/HexCoordUtils';
 import { BASE_CLASSES, getClassById } from '../../data/classes';
 import { Toast } from '../ui/Toast';
 import { ESCORT_TEMPLATE } from '../../data/escort';
@@ -10,7 +10,7 @@ import { ModeLabel } from '../ui/ModeLabel';
 import { TurnBudgetLabel } from '../ui/TurnBudgetLabel';
 import { TownPanel } from '../ui/TownPanel';
 import type { Character } from '../../models/character';
-import type { HexCoord, HexTile } from '../../models/hex';
+import type { HexCoord, HexTile, TerrainType } from '../../models/hex';
 import type { GameMode, GameModeType } from '../../models/save';
 import type { SaveState } from '../../models/save';
 import type { WorldMap as WorldMapModel } from '../../models/world-map';
@@ -20,36 +20,45 @@ import { createSaveModule, serialise } from '../../modules/save';
 import { hireCharacter } from '../../modules/recruitment/TownService';
 import { CameraController } from '../../modules/camera/CameraController';
 import type { CameraKeys } from '../../modules/camera/CameraController';
-import { DeathMarkerStore, TurnBudgetManager, planPartyMove } from '../../modules/world-map';
+import {
+  DeathMarkerStore,
+  TILE_DISPLAY_SIZE,
+  TILE_TEXTURE_SIZE,
+  TurnBudgetManager,
+  planPartyMove,
+  partyMarkerDepth,
+  partyMarkerDisplaySize,
+  partyMarkerWorldPosition,
+  terrainFrameKey,
+  tileFrameIndexAtTime,
+  tilePhaseOffsetMs,
+} from '../../modules/world-map';
 import { shouldRecomputeHoverPreview } from '../../modules/world-map/HoverPreviewThrottle';
+import { ANIMATION_ENABLED } from '../../modules/world-map/TilePresentation';
 
 const { module: saveModule } = createSaveModule();
 
-const TILE_SIZE = 36;
+const TILE_SIZE = TILE_DISPLAY_SIZE;
 const MAP_WIDTH = 40;
 const MAP_HEIGHT = 30;
 
-function uuid(): string {
-  return crypto.randomUUID();
+interface TilePresentationState {
+  coord: HexCoord;
+  terrain: TerrainType;
+  phaseOffsetMs: number;
+  currentFrame: 0 | 1;
+  sprite: Phaser.GameObjects.Image;
 }
 
-function terrainColor(terrain: string): number {
-  const map: Record<string, number> = {
-    ocean: 0x1a4a7a,
-    beach: 0xc4a45a,
-    grassland: 0x2d5a27,
-    forest: 0x1a3a10,
-    desert: 0x8b6914,
-    mountain: 0x5a4030,
-    snow: 0xe8e8f0,
-  };
-  return map[terrain] ?? 0x444444;
+function uuid(): string {
+  return crypto.randomUUID();
 }
 
 export class WorldMap extends Phaser.Scene {
   private hexModule!: ReturnType<typeof createHexGridModule>;
   private party: Character[] = [];
   private charSprites: Map<string, Phaser.GameObjects.Image> = new Map();
+  private tilePresentationStates: Map<string, TilePresentationState> = new Map();
   private deathMarkerSprites: Phaser.GameObjects.Text[] = [];
   private movementOverlay: Phaser.GameObjects.Graphics | null = null;
   private hoverPreviewOverlay: Phaser.GameObjects.Graphics | null = null;
@@ -64,6 +73,7 @@ export class WorldMap extends Phaser.Scene {
   private townPanel: TownPanel | null = null;
   private towns: Town[] = [];
   private cameraController: CameraController | null = null;
+  private _prevHoveredKey: string | null = null;
   private reCenterBtn: HTMLButtonElement | null = null;
   private endTurnKey: Phaser.Input.Keyboard.Key | null = null;
   private cursorKeys: Phaser.Types.Input.Keyboard.CursorKeys | null = null;
@@ -400,6 +410,44 @@ export class WorldMap extends Phaser.Scene {
       this.endTurnKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
     }
 
+    // Click and hover detection: scene-level handlers using fromPixel for geometrically exact hex picking.
+    // Replaces per-tile sprite events which misfired due to overlapping hit circles.
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      const coord = fromPixel(pointer.worldX, pointer.worldY, TILE_SIZE);
+      const key = `${coord.q},${coord.r},${coord.s}`;
+      const map = this.hexModule.store.getMap();
+      const tile = map.tiles[key];
+      if (tile) this.onTileClick(tile);
+    });
+
+    // Hover detection: scene-level pointermove using fromPixel for geometrically exact hex picking.
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      const coord = fromPixel(pointer.worldX, pointer.worldY, TILE_SIZE);
+      const key = `${coord.q},${coord.r},${coord.s}`;
+      const map = this.hexModule.store.getMap();
+
+      if (this._prevHoveredKey && this._prevHoveredKey !== key) {
+        this.tilePresentationStates.get(this._prevHoveredKey)?.sprite.setAlpha(1);
+      }
+
+      if (map.tiles[key]) {
+        this.tilePresentationStates.get(key)?.sprite.setAlpha(0.88);
+        this._prevHoveredKey = key;
+        this.setHoveredTileCoord(coord);
+      } else {
+        this._prevHoveredKey = null;
+        this.setHoveredTileCoord(null);
+      }
+    });
+
+    this.input.on('gameout', () => {
+      if (this._prevHoveredKey) {
+        this.tilePresentationStates.get(this._prevHoveredKey)?.sprite.setAlpha(1);
+        this._prevHoveredKey = null;
+      }
+      this.setHoveredTileCoord(null);
+    });
+
     // T031: Create re-center button
     this.renderReCenterBtn();
 
@@ -429,6 +477,39 @@ export class WorldMap extends Phaser.Scene {
       deathMarkerCount: this.deathMarkerStore.getMarkers().length,
       partySize: this.party.length,
       activePartySize: this.party.filter((character) => character.status === 'active').length,
+      tileDisplaySize: TILE_SIZE,
+      tileTextureSize: TILE_TEXTURE_SIZE,
+      tileCount: this.tilePresentationStates.size,
+      fogOfWarApplied: false,
+      visibleTerrainKinds: (() => {
+        const kinds = new Set<string>();
+        for (const state of this.tilePresentationStates.values()) {
+          if (this.isTilePresentationVisible(state)) {
+            kinds.add(state.terrain);
+          }
+        }
+        return [...kinds];
+      })(),
+      sampleTileFrame: (() => {
+        const visible = this.getVisibleTilePresentationState();
+        const fallback = this.tilePresentationStates.values().next().value as TilePresentationState | undefined;
+        return (visible ?? fallback)?.currentFrame ?? 0;
+      })(),
+      sampleTileTerrain: (() => {
+        const visible = this.getVisibleTilePresentationState();
+        const fallback = this.tilePresentationStates.values().next().value as TilePresentationState | undefined;
+        return (visible ?? fallback)?.terrain ?? null;
+      })(),
+      sampleTileTextureKey: (() => {
+        const visible = this.getVisibleTilePresentationState();
+        const fallback = this.tilePresentationStates.values().next().value as TilePresentationState | undefined;
+        const state = visible ?? fallback;
+        return state ? terrainFrameKey(state.terrain, state.currentFrame) : null;
+      })(),
+      partyMarkerWorldPos: (() => {
+        const coord = this.getActiveCharCoord();
+        return coord ? partyMarkerWorldPosition(coord) : null;
+      })(),
     });
     (this as unknown as Record<string, unknown>)._selectPartyMemberByIndex = (index: number) => {
       const character = this.party[index];
@@ -439,10 +520,12 @@ export class WorldMap extends Phaser.Scene {
   }
 
   /** T027: Called each frame by Phaser — passes keyboard state to CameraController. */
-  update(_time: number, delta: number): void {
+  update(time: number, delta: number): void {
     if (this.endTurnKey && Phaser.Input.Keyboard.JustDown(this.endTurnKey)) {
       this.endTurn();
     }
+
+    this.updateTilePresentation(time);
 
     if (!this.cameraController) return;
 
@@ -637,33 +720,76 @@ export class WorldMap extends Phaser.Scene {
   }
 
   private renderMap(): void {
+    this.clearTilePresentation();
     const tiles = Object.values(this.hexModule.store.getMap().tiles);
 
     for (const tile of tiles) {
       const { x, y } = toPixel(tile.coord, TILE_SIZE);
 
-      const color = terrainColor(tile.terrain);
-      const gfx = this.add.graphics();
-      const fogged = !tile.explored;
-      this.drawHex(gfx, x, y, TILE_SIZE - 2, color, fogged);
+      const phaseOffsetMs = tilePhaseOffsetMs(tile.coord);
+      const currentFrame = tileFrameIndexAtTime(tile.coord, this.time.now);
+      const sprite = this.add.image(x, y, terrainFrameKey(tile.terrain, currentFrame));
+      sprite.setDisplaySize(TILE_SIZE * 2, TILE_SIZE * 2);
+      sprite.setDepth(1);
 
-      // Make tile interactive
-      const hitArea = new Phaser.Geom.Circle(x, y, TILE_SIZE - 4);
-      gfx.setInteractive(hitArea, Phaser.Geom.Circle.Contains);
-      gfx.on('pointerdown', () => this.onTileClick(tile));
-      gfx.on('pointerover', () => {
-        gfx.setAlpha(0.8);
-        this.setHoveredTileCoord(tile.coord);
-      });
-      gfx.on('pointerout', () => {
-        gfx.setAlpha(1);
-        if (this.hoveredTileCoord && this.hoveredTileCoord.q === tile.coord.q && this.hoveredTileCoord.r === tile.coord.r && this.hoveredTileCoord.s === tile.coord.s) {
-          this.setHoveredTileCoord(null);
-        }
+      this.tilePresentationStates.set(this.tileKey(tile.coord), {
+        coord: tile.coord,
+        terrain: tile.terrain,
+        phaseOffsetMs,
+        currentFrame,
+        sprite,
       });
     }
 
     this.cameras.main.setZoom(1);
+  }
+
+  private clearTilePresentation(): void {
+    for (const state of this.tilePresentationStates.values()) {
+      state.sprite.destroy();
+    }
+    this.tilePresentationStates.clear();
+    this._prevHoveredKey = null;
+  }
+
+  private tileKey(coord: HexCoord): string {
+    return `${coord.q},${coord.r},${coord.s}`;
+  }
+
+  private updateTilePresentation(time: number): void {
+    if (!ANIMATION_ENABLED) return;
+
+    for (const state of this.tilePresentationStates.values()) {
+      if (!this.isTilePresentationVisible(state)) {
+        continue;
+      }
+
+      const nextFrame = tileFrameIndexAtTime(state.coord, time);
+      if (nextFrame === state.currentFrame) continue;
+      state.currentFrame = nextFrame;
+      state.sprite.setTexture(terrainFrameKey(state.terrain, nextFrame));
+    }
+  }
+
+  private isTilePresentationVisible(state: TilePresentationState): boolean {
+    const view = this.cameras.main.worldView;
+    const padding = TILE_SIZE;
+    const left = view.x - padding;
+    const top = view.y - padding;
+    const right = view.x + view.width + padding;
+    const bottom = view.y + view.height + padding;
+    const { x, y } = state.sprite;
+    return x >= left && x <= right && y >= top && y <= bottom;
+  }
+
+  private getVisibleTilePresentationState(): TilePresentationState | undefined {
+    for (const state of this.tilePresentationStates.values()) {
+      if (this.isTilePresentationVisible(state)) {
+        return state;
+      }
+    }
+
+    return undefined;
   }
 
   private drawHex(
@@ -694,9 +820,10 @@ export class WorldMap extends Phaser.Scene {
       // Find which tile this character occupies
       for (const tile of Object.values(map.tiles)) {
         if (tile.occupants.includes(ch.id)) {
-          const { x, y } = toPixel(tile.coord, TILE_SIZE);
-          const sprite = this.add.image(x, y - 5, ch.portrait);
-          sprite.setScale(0.7);
+          const { x, y } = partyMarkerWorldPosition(tile.coord);
+          const sprite = this.add.image(x, y, ch.portrait);
+          sprite.setDisplaySize(partyMarkerDisplaySize(), partyMarkerDisplaySize());
+          sprite.setDepth(partyMarkerDepth());
           sprite.setInteractive();
           sprite.on('pointerdown', () => {
             this.selectChar(ch);
@@ -801,7 +928,7 @@ export class WorldMap extends Phaser.Scene {
       this.tweens.add({
         targets: sprite,
         x,
-        y: y - 5,
+        y,
         duration: 300,
         ease: 'Quad.easeOut',
       });
@@ -810,6 +937,7 @@ export class WorldMap extends Phaser.Scene {
 
   shutdown(): void {
     this.charSprites.clear();
+    this.clearTilePresentation();
     this.clearDeathMarkerSprites();
     this.clearMovementOverlays();
     this.movementOverlay?.destroy();

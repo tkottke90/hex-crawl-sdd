@@ -82,6 +82,17 @@ test.describe('T093a — Frame-time guard (≥ 30 fps)', () => {
     await page.locator('.class-card').first().click();
     await expect(page.locator('#btn-save-game')).toBeVisible({ timeout: 15_000 });
 
+    const initialSnapshot = await page.evaluate(() => {
+      const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+      const scene = g.scene.getScene('WorldMap') as unknown as {
+        _getWorldMapSnapshot: () => { tileDisplaySize: number; tileCount: number; sampleTileFrame: number };
+      };
+      return scene._getWorldMapSnapshot();
+    });
+
+    expect(initialSnapshot.tileDisplaySize).toBe(72);
+    expect(initialSnapshot.tileCount).toBeGreaterThan(0);
+
     // Skip 30 warm-up frames to let the JIT and initial asset loads settle before measuring
     const deltas = await collectFrameDeltas(page, SAMPLE_FRAMES, 30);
     const stats = frameStats(deltas);
