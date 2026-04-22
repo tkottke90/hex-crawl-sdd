@@ -12,28 +12,28 @@ Constitution Check
 Milestones
 
 1. Design & Data Model (this step)
-   - Finalise save schema additions (`deathMarkers: {coord, name}[]`) and world-map state (`remainingTurnBudget`).
-   - Confirm where to surface "End Turn" (simple button + keyboard shortcut) — planning decision.
+  - Finalise save schema additions (`deathMarkers: {coord, name}[]`, `remainingTurnBudget`) and world-map state.
+  - Surface "End Turn" as a required world-map control: a dedicated button plus a keyboard shortcut.
 
 2. Core Movement Engine
-   - Replace single-character move flow in `WorldMap.ts` with party-move flow.
-   - Use A* from `HexCoordUtils` to compute single path, truncate to remaining budget, apply to all members.
-   - Decrement `remainingTurnBudget` by tiles traversed; hide reachable highlights when budget == 0.
+  - Replace single-character move flow in `WorldMap.ts` with party-move flow.
+  - Use A* from `HexCoordUtils` to compute single path, truncate to remaining budget, apply to all members.
+  - Decrement `remainingTurnBudget` by tiles traversed; hide reachable highlights when budget == 0.
 
 3. UX & Visuals
-   - Tile highlight overlay (in-range based on remaining budget).
-   - Hover A* preview with yellow (in-range) / red (out-of-range) split; throttle per-tile entry.
-   - Death marker visuals (small icon + name label) and rendering from save on load.
-   - Remaining budget UI (numeric/pips) and optional "End Turn" control.
+  - Tile highlight overlay (in-range based on remaining budget).
+  - Hover A* preview with yellow (in-range) / red (out-of-range) split; throttle per-tile entry.
+  - Death marker visuals (small icon + name label) and rendering from save on load.
+  - Remaining budget UI (numeric/pips) and required "End Turn" control.
 
 4. Persistence & Migration
-   - Extend save schema to serialise `deathMarkers: { coord, name }[]` and world-map `remainingTurnBudget` (or recompute on load if preferred).
-   - Add legacy repair: on load, move non-PC occupants to PC tile if mismatched.
+  - Extend save schema to serialise `deathMarkers: { coord, name }[]` and world-map `remainingTurnBudget` so mid-turn save/load preserves exact progress.
+  - Add legacy repair: on load, move non-PC occupants to PC tile if mismatched.
 
 5. Testing & QA
-   - Unit tests for movement-range calculation (DEX modifiers), path truncation, death-marker serialisation.
-   - Integration tests: world-map flows (save/load, legacy save repair, death handling).
-   - e2e smoke test: party moves together; death markers persist after save/load; turn budget refresh on turn boundary.
+  - Unit tests for movement-range calculation (DEX modifiers), path truncation, death-marker serialisation.
+  - Integration tests: world-map flows (save/load, remaining budget persistence, legacy save repair, death handling).
+  - e2e smoke test: party moves together; death markers persist after save/load; turn budget refresh on turn boundary.
 
 Deliverables
 - `specs/003-party-movement/data-model.md`
@@ -45,4 +45,4 @@ Risks
 - UI tuning for budget visibility (playtesting required).
 - Save migration complexity for many legacy saves (mitigate by conservative repair to PC tile).
 
-Next: create `data-model.md` and `tasks.md` (TDD-ordered) and then we can start implementing core movement changes.
+Next: validate the data model and task order against this plan, then start implementing the core movement changes.

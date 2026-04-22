@@ -1,15 +1,14 @@
 # Data Model Changes — Unified Party Movement
 
 Summary
-- Add `deathMarkers: Array<{ coord: HexCoord, name: string }>` to the save schema so death markers persist across save/load.
-- Add `worldMap.remainingTurnBudget: number` to transient world-map state; the value may be persisted if the design requires continuing mid-turn across saves.
+- Add `deathMarkers: Array<{ coord: HexCoord, name: string }>` and `worldMap.remainingTurnBudget: number` to the save schema so both death markers and mid-turn movement progress persist across save/load.
 
 Details
 
 1. Save Schema
 - `SaveFile` (existing) additions:
   - `deathMarkers?: { q:number, r:number, name: string }[]`
-  - Optionally: `worldMap?: { remainingTurnBudget?: number }` (recommendation: persist `deathMarkers`, but recompute budget on load to avoid edge cases unless the product requires mid-turn save/restores).
+  - `worldMap?: { remainingTurnBudget: number }`
 
 2. Runtime State
 - `WorldMapState` (in-memory):
@@ -31,13 +30,14 @@ Details
 
 4. Schema Migration Guidance
 - On load, if occupants show party members on different tiles, move all non-PC occupants to PC tile.
-- If `deathMarkers` absent, create empty array.
+- If `deathMarkers` is absent, create an empty array.
+- If `worldMap.remainingTurnBudget` is absent in a legacy save, initialise it to the full budget for the current party so old saves remain playable.
 
 5. TypeScript Types (examples)
 ```ts
 type HexCoord = { q:number, r:number };
 interface DeathMarker { coord: HexCoord; name: string }
-interface SaveFile { /* existing */ deathMarkers?: DeathMarker[]; worldMap?: { remainingTurnBudget?: number } }
+interface SaveFile { /* existing */ deathMarkers?: DeathMarker[]; worldMap?: { remainingTurnBudget: number } }
 ```
 
-Recommendation: persist `deathMarkers` but recompute `remainingTurnBudget` on load unless explicitly wanting to resume mid-turn.
+Recommendation: persist both `deathMarkers` and `remainingTurnBudget` so save/load round-trips preserve the exact world-map state; legacy saves without `remainingTurnBudget` should initialise it to the full turn budget for the current party.
