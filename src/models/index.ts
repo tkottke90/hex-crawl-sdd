@@ -10,6 +10,7 @@ export type {
 export type { StatusEffect } from './status-effect';
 export type { TerrainType, PoiTag, HexCoord, HexTile } from './hex';
 export type { TownId, EnemyCampId, WorldMap } from './world-map';
+export type { DeathMarker } from './world-map';
 export type { HireableHero, Town } from './town';
 export type { EnemyUnit, EnemyCamp } from './enemy';
 export type {

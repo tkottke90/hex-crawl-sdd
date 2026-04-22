@@ -1,5 +1,5 @@
 import type { Character, DeathRecord } from './character';
-import type { WorldMap } from './world-map';
+import type { DeathMarker, WorldMap } from './world-map';
 import type { Town } from './town';
 import type { EnemyCamp } from './enemy';
 import type { CombatEncounter } from './combat';
@@ -19,6 +19,7 @@ export interface SaveState {
   gameMode: GameMode;
   worldMap: WorldMap;
   party: Character[];
+  deathMarkers?: DeathMarker[];
   deathHistory: DeathRecord[];
   invalidated: boolean;
   towns: Town[];

@@ -16,6 +16,7 @@ function makeMinimalSaveState(): Parameters<typeof serialise>[0] {
       playerStartCoord: { q: 0, r: 0, s: 0 },
     },
     party: [],
+    deathMarkers: [],
     deathHistory: [],
     invalidated: false,
     towns: [],
@@ -70,6 +71,16 @@ describe('Serialiser.serialise', () => {
     const result = serialise(state);
     expect(result.invalidated).toBe(true);
   });
+
+  it('preserves death markers and remaining turn budget', () => {
+    const state = makeMinimalSaveState();
+    state.deathMarkers = [{ coord: { q: 2, r: -2, s: 0 }, name: 'Ward' }];
+    state.worldMap.remainingTurnBudget = 3;
+
+    const result = serialise(state);
+    expect(result.deathMarkers).toEqual([{ coord: { q: 2, r: -2, s: 0 }, name: 'Ward' }]);
+    expect(result.worldMap.remainingTurnBudget).toBe(3);
+  });
 });
 
 describe('SaveStateSchema round-trip', () => {
@@ -87,6 +98,7 @@ describe('SaveStateSchema round-trip', () => {
         playerStartCoord: { q: 0, r: 0, s: 0 },
       },
       party: [],
+      deathMarkers: [],
       deathHistory: [],
       invalidated: false,
       towns: [],

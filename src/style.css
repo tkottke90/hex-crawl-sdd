@@ -1,9 +1,8 @@
 @import "tailwindcss";
 
-* {
+html,body,#game-container {
   box-sizing: border-box;
   margin: 0;
-  padding: 0;
 }
 
 body {
@@ -13,4 +12,17 @@ body {
 #game-container {
   width: 100vw;
   height: 100vh;
+}
+
+
+@layer base {
+
+
+  button {
+    @apply px-4 py-2 cursor-pointer;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
 }

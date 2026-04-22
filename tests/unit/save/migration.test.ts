@@ -31,4 +31,30 @@ describe('migrate', () => {
     const result = migrate(data, 1);
     expect(result).toBeDefined();
   });
+
+  it('restores missing world map budget from the current party and defaults death markers', () => {
+    const data = {
+      schemaVersion: 1,
+      party: [
+        {
+          status: 'active',
+          attributes: { dex: 14 },
+        },
+      ],
+      worldMap: {
+        seed: 'seed',
+        width: 1,
+        height: 1,
+        tiles: {},
+        towns: [],
+        enemyCamps: [],
+        playerStartCoord: { q: 0, r: 0, s: 0 },
+      },
+    };
+
+    const result = migrate(data, 1);
+
+    expect(result.worldMap.remainingTurnBudget).toBe(3);
+    expect(result.deathMarkers).toEqual([]);
+  });
 });

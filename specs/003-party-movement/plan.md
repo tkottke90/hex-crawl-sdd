@@ -13,7 +13,7 @@ Milestones
 
 1. Design & Data Model (this step)
   - Finalise save schema additions (`deathMarkers: {coord, name}[]`, `remainingTurnBudget`) and world-map state.
-  - Surface "End Turn" as a required world-map control: a dedicated button plus a keyboard shortcut, and wire turn-boundary refresh hooks for combat and town returns.
+  - Surface "End Turn" as a required world-map control: a dedicated button plus a keyboard shortcut, and wire turn-boundary refresh hooks for combat, town returns, and the explicit End Turn action.
 
 2. Core Movement Engine
   - Replace single-character move flow in `WorldMap.ts` with party-move flow.

@@ -120,6 +120,11 @@ const MetaProgressionModuleSchema = z.object({
   schemaVersion: z.literal(1),
 });
 
+const DeathMarkerSchema = z.object({
+  coord: HexCoordSchema,
+  name: z.string(),
+});
+
 // ---------------------------------------------------------------------------
 // SaveState — root parse entry
 // ---------------------------------------------------------------------------
@@ -128,6 +133,7 @@ export const SaveStateSchema = z.object({
   gameMode: GameModeSchema,
   worldMap: WorldMapSchema,
   party: z.array(CharacterSchema),
+  deathMarkers: z.array(DeathMarkerSchema).optional(),
   deathHistory: z.array(DeathRecordSchema),
   invalidated: z.boolean(),
   towns: z.array(TownSchema),

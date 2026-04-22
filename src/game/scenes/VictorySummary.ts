@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser';
 import type { Character } from '../../models/character';
 import type { EnemyUnit } from '../../models/enemy';
+import { applyCombatReturnState } from '../../modules/world-map/CombatReturnState';
 
 export interface VictorySummaryData {
   playerUnits: Character[];
@@ -52,7 +53,14 @@ export class VictorySummary extends Phaser.Scene {
 
     document.getElementById('btn-victory-continue')!.addEventListener('click', () => {
       this.registry.events.emit('map:clear-enemy-tile', { encounterId: data.encounterId });
+      const currentSave = this.registry.get('saveState');
+      if (currentSave) {
+        const updatedSave = applyCombatReturnState(currentSave, data.playerUnits);
+        this.registry.set('saveState', updatedSave);
+        this.registry.set('worldMap', updatedSave.worldMap);
+      }
       this.cleanup();
+      this.registry.set('worldMapTurnRefresh', true);
       this.scene.start('WorldMap');
     });
   }

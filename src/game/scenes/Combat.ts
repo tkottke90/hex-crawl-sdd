@@ -15,6 +15,7 @@ import type { Character } from '../../models/character';
 import type { EnemyUnit } from '../../models/enemy';
 import type { GameMode } from '../../models/save';
 import type { DiceRoll } from '../../models/combat';
+import { applyCombatReturnState } from '../../modules/world-map/CombatReturnState';
 
 const { module: saveModule } = createSaveModule();
 
@@ -311,7 +312,14 @@ export class Combat extends Phaser.Scene {
         mode: this.gameMode.type,
       });
     } else {
+      const currentSave = this.registry.get('saveState');
+      if (currentSave) {
+        const updatedSave = applyCombatReturnState(currentSave, party);
+        this.registry.set('saveState', updatedSave);
+        this.registry.set('worldMap', updatedSave.worldMap);
+      }
       this.cleanup();
+      this.registry.set('worldMapTurnRefresh', true);
       this.scene.start('WorldMap');
     }
   }

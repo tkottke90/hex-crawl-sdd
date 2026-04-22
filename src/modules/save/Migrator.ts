@@ -1,4 +1,5 @@
 import type { SaveState } from '../../models/save';
+import { computeTurnBudget } from '../world-map/TurnBudgetManager';
 import { CURRENT_SCHEMA_VERSION } from './Serialiser';
 
 export class SaveVersionError extends Error {
@@ -42,6 +43,15 @@ export function migrate(raw: unknown, targetVersion = CURRENT_SCHEMA_VERSION): S
   // Ensure version field is set
   if (typeof current.version !== 'number') {
     current.version = targetVersion;
+  }
+
+  if (current.worldMap && typeof (current.worldMap as Record<string, unknown>).remainingTurnBudget !== 'number') {
+    const party = Array.isArray(current.party) ? current.party : [];
+    (current.worldMap as Record<string, unknown>).remainingTurnBudget = computeTurnBudget(party as never[]);
+  }
+
+  if (!Array.isArray(current.deathMarkers)) {
+    current.deathMarkers = [];
   }
 
   return current as unknown as SaveState;

@@ -8,27 +8,27 @@
 
 ## Constitution and Scope
 
-- [ ] CHK001 Is the plan's Constitution Check present and aligned with Principles I-IV? [Traceability, Plan]
-- [ ] CHK002 Are the milestones small enough to keep the game playable after each step? [Scope, Plan]
+- [x] CHK001 Is the plan's Constitution Check present and aligned with Principles I-IV? [Traceability, Plan]
+- [x] CHK002 Are the milestones small enough to keep the game playable after each step? [Scope, Plan]
 - [x] CHK003 Is there a single decision for the End Turn control surface so FR-016 cannot remain optional? [Conflict, Spec §FR-016, Plan §3, Tasks §T8]
 
 ## Requirement and Data Traceability
 
-- [ ] CHK004 Does every functional requirement from FR-001 through FR-016 map to at least one task? [Traceability, Spec, Tasks]
-- [ ] CHK005 Is FR-003 covered by an explicit regression test for sprite tap, stat display, and camera focus? [Coverage, Spec §FR-003, Tasks §T9]
-- [ ] CHK006 Does FR-001 have explicit coverage for both path truncation and zero-path silent ignore behavior? [Coverage, Spec §FR-001, Tasks §T4]
+- [x] CHK004 Does every functional requirement from FR-001 through FR-016 map to at least one task? [Traceability, Spec, Tasks]
+- [x] CHK005 Is FR-003 covered by an explicit regression test for sprite tap, stat display, and camera focus? [Coverage, Spec §FR-003, Tasks §T9]
+- [x] CHK006 Does FR-001 have explicit coverage for both path truncation and zero-path silent ignore behavior? [Coverage, Spec §FR-001, Tasks §T4]
 - [x] CHK007 Is the remaining-turn-budget save/load behavior chosen and stated unambiguously? [Ambiguity, Data Model, Tasks §T7]
-- [ ] CHK008 Are death markers fully traced from creation to save/load restore and render-on-load? [Coverage, Spec §FR-014, Tasks §T2/T6/T7/T10]
-- [ ] CHK009 Are legacy save repair and normal save/load round-trips both covered by tasks and tests? [Coverage, Spec §FR-006, SC-004, SC-005, Tasks §T7/T10]
-- [ ] CHK010 Are turn-budget math and roster-change recalculation both covered by unit tests? [Coverage, Spec §FR-010, FR-011, Tasks §T1/T3]
-- [ ] CHK011 Is hover-preview throttling explicitly tested so A* recomputation only occurs when the cursor enters a new tile? [Performance, Spec §FR-012, Tasks §T5/T11]
-- [ ] CHK012 Are remaining budget display and tile highlight requirements explicit enough to implement without further clarification? [Clarity, Spec §FR-015, FR-012, Tasks §T8]
+- [x] CHK008 Are death markers fully traced from creation to save/load restore and render-on-load? [Coverage, Spec §FR-014, Tasks §T2/T6/T7/T10]
+- [x] CHK009 Are legacy save repair and normal save/load round-trips both covered by tasks and tests? [Coverage, Spec §FR-006, SC-004, SC-005, Tasks §T7/T10]
+- [x] CHK010 Are turn-budget math and roster-change recalculation both covered by unit tests? [Coverage, Spec §FR-010, FR-011, Tasks §T1/T3]
+- [x] CHK011 Is hover-preview throttling explicitly tested so A* recomputation only occurs when the cursor enters a new tile? [Performance, Spec §FR-012, Tasks §T5/T11]
+- [x] CHK012 Are remaining budget display and tile highlight requirements explicit enough to implement without further clarification? [Clarity, Spec §FR-015, FR-012, Tasks §T8]
 
 ## Implementation Readiness
 
-- [ ] CHK013 Are world-map responsibilities split into reusable helpers instead of one large scene rewrite? [Consistency, Plan §2-4]
-- [ ] CHK014 Do the task dependencies keep unit tests and helper modules ahead of integration and e2e work? [Sequence, Tasks]
-- [ ] CHK015 Are the known risks around budget visibility and save migration reflected in the task order? [Risk, Plan §Risks, Tasks]
+- [x] CHK013 Are world-map responsibilities split into reusable helpers instead of one large scene rewrite? [Consistency, Plan §2-4]
+- [x] CHK014 Do the task dependencies keep unit tests and helper modules ahead of integration and e2e work? [Sequence, Tasks]
+- [x] CHK015 Are the known risks around budget visibility and save migration reflected in the task order? [Risk, Plan §Risks, Tasks]
 
 ## Notes
 

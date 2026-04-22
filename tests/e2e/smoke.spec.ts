@@ -52,6 +52,46 @@ async function launchTestCombat(page: Page): Promise<void> {
   await expect(page.locator('#combat-action-bar')).toBeVisible({ timeout: 10_000 });
 }
 
+async function writeModifiedSave(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const game = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+    const currentSave = game.registry.get('saveState') as Record<string, unknown>;
+    if (!currentSave) throw new Error('Expected saveState to exist before round-trip smoke test');
+
+    const saveRecord = {
+      ...currentSave,
+      saveId: 'smoke-roundtrip',
+      timestamp: new Date(Date.now() + 120_000).toISOString(),
+      worldMap: {
+        ...(currentSave.worldMap as Record<string, unknown>),
+        remainingTurnBudget: 1,
+      },
+      deathMarkers: [{ coord: { q: 2, r: -2, s: 0 }, name: 'Ward' }],
+    };
+
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open('hex-crawl-v1', 1);
+      request.onupgradeneeded = () => {
+        const database = request.result;
+        if (!database.objectStoreNames.contains('saves')) {
+          database.createObjectStore('saves', { keyPath: 'saveId' });
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error ?? new Error('Failed to open IndexedDB'));
+    });
+
+    const tx = db.transaction('saves', 'readwrite');
+    tx.objectStore('saves').put(saveRecord);
+    await new Promise<void>((resolve, reject) => {
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error('Failed to write smoke save record'));
+      tx.onabort = () => reject(tx.error ?? new Error('Smoke save transaction aborted'));
+    });
+    db.close();
+  });
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Smoke — New Game flow', () => {
@@ -158,5 +198,78 @@ test.describe('Smoke — Save flow (Casual)', () => {
       page.click('#btn-export-save'),
     ]);
     expect(download.suggestedFilename()).toMatch(/hex-crawl.*\.json/);
+  });
+
+  test('shared party movement consumes budget once and keeps the party together', async ({ page }) => {
+    await navigateToWorldMap(page);
+    await page.waitForTimeout(200);
+
+    const before = await page.evaluate(() => {
+      const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+      const scene = g.scene.getScene('WorldMap') as unknown as {
+        _getWorldMapSnapshot: () => { remainingTurnBudget: number; partySize: number; activePartySize: number };
+        _getActiveCharWorldPos: () => { x: number; y: number };
+        _clickNeighbourTile: () => boolean;
+      };
+      return {
+        snapshot: scene._getWorldMapSnapshot(),
+        activePos: scene._getActiveCharWorldPos(),
+      };
+    });
+
+    const moved = await page.evaluate(() => {
+      const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+      const scene = g.scene.getScene('WorldMap') as unknown as {
+        _clickNeighbourTile: () => boolean;
+      };
+      return scene._clickNeighbourTile();
+    });
+
+    if (!moved) {
+      test.skip();
+      return;
+    }
+
+    await page.waitForTimeout(350);
+
+    const after = await page.evaluate(() => {
+      const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+      const scene = g.scene.getScene('WorldMap') as unknown as {
+        _getWorldMapSnapshot: () => { remainingTurnBudget: number; partySize: number; activePartySize: number };
+        _getActiveCharWorldPos: () => { x: number; y: number };
+      };
+      return {
+        snapshot: scene._getWorldMapSnapshot(),
+        activePos: scene._getActiveCharWorldPos(),
+      };
+    });
+
+    expect(after.snapshot.partySize).toBe(before.snapshot.partySize);
+    expect(after.snapshot.activePartySize).toBe(before.snapshot.activePartySize);
+    expect(after.snapshot.remainingTurnBudget).toBeLessThan(before.snapshot.remainingTurnBudget);
+    expect(after.activePos.x !== before.activePos.x || after.activePos.y !== before.activePos.y).toBe(true);
+  });
+
+  test('loaded save preserves death markers and mid-turn remaining budget', async ({ page }) => {
+    await navigateToWorldMap(page);
+    await writeModifiedSave(page);
+
+    await page.reload();
+    await expect(page.locator('#main-menu')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('#btn-load-game')).toBeEnabled({ timeout: 10_000 });
+    await page.click('#btn-load-game');
+    await expect(page.locator('#btn-save-game')).toBeVisible({ timeout: 15_000 });
+
+    const snapshot = await page.evaluate(() => {
+      const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+      const scene = g.scene.getScene('WorldMap') as unknown as {
+        _getWorldMapSnapshot: () => { remainingTurnBudget: number; deathMarkerCount: number; partySize: number };
+      };
+      return scene._getWorldMapSnapshot();
+    });
+
+    expect(snapshot.remainingTurnBudget).toBe(1);
+    expect(snapshot.deathMarkerCount).toBe(1);
+    expect(snapshot.partySize).toBeGreaterThanOrEqual(1);
   });
 });

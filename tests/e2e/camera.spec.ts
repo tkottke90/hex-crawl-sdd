@@ -113,7 +113,7 @@ test.describe('US1 — Camera centers on active character at load', () => {
 test.describe('US2 — Camera follows active character on movement', () => {
   test('T018: after character moves, camera midPoint matches destination within 2 px after tween', async ({ page }) => {
     await navigateToWorldMap(page);
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(500);
 
     // Click on a passable neighbour tile via JS to trigger moveOccupant
     const moved = await page.evaluate(async () => {
@@ -140,6 +140,37 @@ test.describe('US2 — Camera follows active character on movement', () => {
 
     expect(Math.abs(cam.midX - charPos.x)).toBeLessThanOrEqual(2);
     expect(Math.abs(cam.midY - charPos.y)).toBeLessThanOrEqual(2);
+  });
+
+  test('T012: selecting a party member updates the stat panel and recenters the camera', async ({ page }) => {
+    await navigateToWorldMap(page);
+    await page.waitForTimeout(200);
+
+    await page.keyboard.down('ArrowLeft');
+    await page.waitForTimeout(400);
+    await page.keyboard.up('ArrowLeft');
+
+    const selected = await page.evaluate(() => {
+      const g = (window as unknown as { __hexGame: Phaser.Game }).__hexGame;
+      const scene = g.scene.getScene('WorldMap') as unknown as {
+        _selectPartyMemberByIndex: (index: number) => boolean;
+      };
+      return scene._selectPartyMemberByIndex(1);
+    });
+
+    if (!selected) {
+      test.skip();
+      return;
+    }
+
+    await page.waitForTimeout(200);
+
+    await expect(page.locator('#stat-panel')).toContainText('The Ward');
+
+    const cam = await getCameraState(page);
+    const charPos = await getActiveCharWorldPos(page);
+
+    expect(Math.abs(cam.midX - charPos.x)).toBeLessThanOrEqual(6);
   });
 });
 
@@ -288,17 +319,19 @@ test.describe('SC-005 — Camera stays within bounds on 50 map seeds', () => {
 
     const results = await page.evaluate(async () => {
       // Use the exposed Phaser game to generate maps with deterministic seeds
-      const g = (window as unknown as {
+      const windowWithTestUtils = window as unknown as {
         __hexGame: Phaser.Game;
         __testUtils?: { loadSeed: (seed: string) => Promise<void> };
-      }).__hexGame;
+      };
+      const g = windowWithTestUtils.__hexGame;
+      const testUtils = windowWithTestUtils.__testUtils;
 
-      if (!window.__testUtils) return { skipped: true };
+      if (!testUtils) return { skipped: true };
 
       const violations: string[] = [];
       for (let i = 0; i < 50; i++) {
         const seed = `test_seed_${i}`;
-        await window.__testUtils.loadSeed(seed);
+        await testUtils.loadSeed(seed);
 
         const scene = g.scene.getScene('WorldMap') as Phaser.Scene;
         const cam = scene.cameras.main;

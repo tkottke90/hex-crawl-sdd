@@ -27,4 +27,5 @@ export const WorldMapSchema = z.object({
   towns: z.array(z.string()),
   enemyCamps: z.array(z.string()),
   playerStartCoord: HexCoordSchema,
+  remainingTurnBudget: z.number().int().nonnegative().optional(),
 });

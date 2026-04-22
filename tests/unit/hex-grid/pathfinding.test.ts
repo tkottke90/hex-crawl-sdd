@@ -43,6 +43,12 @@ describe('Pathfinder', () => {
     expect(path!.length).toBeGreaterThan(0);
   });
 
+  it('returns an empty path when the start and destination are the same tile', () => {
+    const map = makeMap([tile(0, 0)]);
+    const path = findPath(makeCoord(0, 0), makeCoord(0, 0), map);
+    expect(path).toEqual([]);
+  });
+
   it('returns null when destination is impassable', () => {
     const map = makeMap([tile(0, 0), tile(1, -1, false)]);
     const path = findPath(makeCoord(0, 0), makeCoord(1, -1), map);

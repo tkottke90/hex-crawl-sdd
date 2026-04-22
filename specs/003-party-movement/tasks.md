@@ -6,8 +6,8 @@
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 [P] Create the shared world-map helper module surface in `src/modules/world-map/index.ts` for movement, budget, and death-marker helpers.
-- [ ] T002 [P] Add the remaining-budget HUD component scaffold in `src/game/ui/TurnBudgetLabel.ts` and reserve a mount point in `src/game/scenes/WorldMap.ts`.
+- [X] T001 [P] Create the shared world-map helper module surface in `src/modules/world-map/index.ts` for movement, budget, and death-marker helpers.
+- [X] T002 [P] Add the remaining-budget HUD component scaffold in `src/game/ui/TurnBudgetLabel.ts` and reserve a mount point in `src/game/scenes/WorldMap.ts`.
 
 ---
 
@@ -15,10 +15,10 @@
 
 **Purpose**: Write the shared failing tests that define the new movement, save, and marker behavior before implementation starts.
 
-- [ ] T003 [P] Add unit coverage for turn-budget math in `tests/unit/world-map/TurnBudgetManager.test.ts`.
-- [ ] T004 [P] Add unit coverage for death-marker storage in `tests/unit/world-map/DeathMarkerStore.test.ts`.
-- [ ] T005 [P] Add save schema and migration regression coverage for `deathMarkers` and `remainingTurnBudget` in `tests/unit/save/serialise.test.ts` and `tests/unit/save/migration.test.ts`.
-- [ ] T006 [P] Add path truncation, zero-path, exploration-once, and shared-destination POI coverage in `tests/unit/hex-grid/pathfinding.test.ts` and `tests/unit/world-map/party-movement.test.ts`.
+- [X] T003 [P] Add unit coverage for turn-budget math in `tests/unit/world-map/TurnBudgetManager.test.ts`.
+- [X] T004 [P] Add unit coverage for death-marker storage in `tests/unit/world-map/DeathMarkerStore.test.ts`.
+- [X] T005 [P] Add save schema and migration regression coverage for `deathMarkers` and `remainingTurnBudget` in `tests/unit/save/serialise.test.ts` and `tests/unit/save/migration.test.ts`.
+- [X] T006 [P] Add path truncation, zero-path, exploration-once, and shared-destination POI coverage in `tests/unit/hex-grid/pathfinding.test.ts` and `tests/unit/world-map/party-movement.test.ts`.
 
 **Checkpoint**: The shared behavior is now specified by tests and ready for implementation.
 
@@ -30,11 +30,11 @@
 
 **Independent Test**: Click a reachable tile and confirm every party member lands on the same destination tile while the remaining budget decreases exactly once.
 
-- [ ] T007 [P] [US1] Implement `TurnBudgetManager` in `src/modules/world-map/TurnBudgetManager.ts` with reset, consume, and getRemaining behavior.
-- [ ] T008 [P] [US1] Implement party path planning and truncation in `src/modules/world-map/PartyMovementPlanner.ts`.
-- [ ] T009 [US1] Update `src/game/scenes/WorldMap.ts` to move the full party on a single click, apply truncated paths to every member, consume the turn budget once per move, and trigger tile exploration plus POI interactions from the shared destination only.
-- [ ] T010 [US1] Add remaining-budget tile highlights and hover preview rendering in `src/game/scenes/WorldMap.ts` and `src/modules/hex-grid/ReachableTiles.ts`.
-- [ ] T011 [US1] Add the required End Turn button and keyboard shortcut in `src/game/scenes/WorldMap.ts` and `src/game/ui/TurnBudgetLabel.ts`, and hook turn-boundary refresh events so the remaining budget resets after combat or town returns.
+- [X] T007 [P] [US1] Implement `TurnBudgetManager` in `src/modules/world-map/TurnBudgetManager.ts` with reset, consume, and getRemaining behavior.
+- [X] T008 [P] [US1] Implement party path planning and truncation in `src/modules/world-map/PartyMovementPlanner.ts`.
+- [X] T009 [US1] Update `src/game/scenes/WorldMap.ts` to move the full party on a single click, apply truncated paths to every member, consume the turn budget once per move, and trigger tile exploration plus POI interactions from the shared destination only.
+- [X] T010 [US1] Add remaining-budget tile highlights and hover preview rendering in `src/game/scenes/WorldMap.ts` and `src/modules/hex-grid/ReachableTiles.ts`.
+- [X] T011 [US1] Add the required End Turn button and keyboard shortcut in `src/game/scenes/WorldMap.ts` and `src/game/ui/TurnBudgetLabel.ts`, and hook turn-boundary refresh events so the remaining budget resets after combat, town returns, or the explicit End Turn action.
 
 **Checkpoint**: The unified party movement loop is playable on its own.
 
@@ -46,8 +46,8 @@
 
 **Independent Test**: Tap the Ward, verify the stat panel and camera update, then click a destination tile and confirm the whole party still moves together.
 
-- [ ] T012 [P] [US2] Add regression coverage for sprite selection, stat-panel updates, and camera focus in `tests/unit/camera/CameraController.test.ts` and `tests/e2e/camera.spec.ts`.
-- [ ] T013 [US2] Preserve `selectChar()` behavior in `src/game/scenes/WorldMap.ts` so selection only affects the stat panel and camera follow state.
+- [X] T012 [P] [US2] Add regression coverage for sprite selection, stat-panel updates, and camera focus in `tests/unit/camera/CameraController.test.ts` and `tests/e2e/camera.spec.ts`.
+- [X] T013 [US2] Preserve `selectChar()` behavior in `src/game/scenes/WorldMap.ts` so selection only affects the stat panel and camera follow state.
 
 **Checkpoint**: Character selection remains useful without affecting party movement.
 
@@ -59,10 +59,10 @@
 
 **Independent Test**: Kill a non-PC character in combat, return to the world map, and confirm the sprite is gone, a name marker remains, and the turn budget updates.
 
-- [ ] T014 [P] [US4] Implement `DeathMarkerStore` in `src/modules/world-map/DeathMarkerStore.ts` with add, get, serialise, and load support.
-- [ ] T015 [US4] Update `src/game/scenes/WorldMap.ts` to remove dead non-PC characters from the active party, remove their sprites, and recalculate the turn budget.
-- [ ] T016 [US4] Render death markers from runtime state in `src/game/scenes/WorldMap.ts` using `DeathMarkerStore` data so markers stay visible after the death event.
-- [ ] T017 [P] [US4] Add death-handling coverage in `tests/unit/world-map/DeathMarkerStore.test.ts` and `tests/unit/world-map/death-handling.test.ts`.
+- [X] T014 [P] [US4] Implement `DeathMarkerStore` in `src/modules/world-map/DeathMarkerStore.ts` with add, get, serialise, and load support.
+- [X] T015 [US4] Update `src/game/scenes/WorldMap.ts` to remove dead non-PC characters from the active party, remove their sprites, and recalculate the turn budget.
+- [X] T016 [US4] Render death markers from runtime state in `src/game/scenes/WorldMap.ts` using `DeathMarkerStore` data so markers stay visible after the death event.
+- [X] T017 [P] [US4] Add death-handling coverage in `tests/unit/world-map/DeathMarkerStore.test.ts` and `tests/unit/world-map/death-handling.test.ts`.
 
 **Checkpoint**: Death handling no longer leaves ghost party members on the world map.
 
@@ -74,9 +74,9 @@
 
 **Independent Test**: Move the party, save mid-turn, reload, and verify shared position, remaining budget, and markers all match the pre-save state.
 
-- [ ] T018 [P] [US3] Extend `src/models/save.ts`, `src/schemas/save.schema.ts`, and `src/modules/save/Serialiser.ts` to persist `deathMarkers` and `remainingTurnBudget`.
-- [ ] T019 [US3] Update `src/modules/save/Migrator.ts` and `src/game/scenes/WorldMap.ts` to restore `deathMarkers`, `remainingTurnBudget`, and legacy occupant repairs before the first player action.
-- [ ] T020 [P] [US3] Add save/load round-trip coverage for shared-party restore, mid-turn budget persistence, death-marker render timing within one frame, and legacy repair in `tests/unit/save/serialise.test.ts`, `tests/unit/save/migration.test.ts`, and `tests/e2e/new-game.spec.ts`.
+- [X] T018 [P] [US3] Extend `src/models/save.ts`, `src/schemas/save.schema.ts`, and `src/modules/save/Serialiser.ts` to persist `deathMarkers` and `remainingTurnBudget`.
+- [X] T019 [US3] Update `src/modules/save/Migrator.ts` and `src/game/scenes/WorldMap.ts` to restore `deathMarkers`, `remainingTurnBudget`, and legacy occupant repairs before the first player action.
+- [X] T020 [P] [US3] Add save/load round-trip coverage for shared-party restore, mid-turn budget persistence, death-marker render timing within one frame, and legacy repair in `tests/unit/save/serialise.test.ts`, `tests/unit/save/migration.test.ts`, and `tests/e2e/new-game.spec.ts`.
 
 **Checkpoint**: Save/restore preserves the exact world-map state, including mid-turn progress.
 
@@ -86,9 +86,9 @@
 
 **Purpose**: Tighten the feature across UI, persistence, and smoke coverage.
 
-- [ ] T021 [P] Tighten hover-preview throttling and budget display polish in `src/game/scenes/WorldMap.ts` and `src/game/ui/TurnBudgetLabel.ts`.
+- [X] T021 [P] Tighten hover-preview throttling and budget display polish in `src/game/scenes/WorldMap.ts` and `src/game/ui/TurnBudgetLabel.ts`.
 - [ ] T022 [P] Expand `tests/e2e/smoke.spec.ts` to cover party movement, death markers, and mid-turn save/load persistence.
-- [ ] T023 Run `scripts/validate-quickstart.sh` after the feature stories are complete and record any follow-up gaps.
+- [X] T023 Run `scripts/validate-quickstart.sh` after the feature stories are complete and record any follow-up gaps.
 
 ---
 

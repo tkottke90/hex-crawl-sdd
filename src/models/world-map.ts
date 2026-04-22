@@ -3,6 +3,11 @@ import type { HexCoord, HexTile } from './hex';
 export type TownId = string;
 export type EnemyCampId = string;
 
+export interface DeathMarker {
+  coord: HexCoord;
+  name: string;
+}
+
 export interface WorldMap {
   seed: string;
   width: number;
@@ -11,4 +16,5 @@ export interface WorldMap {
   towns: TownId[];
   enemyCamps: EnemyCampId[];
   playerStartCoord: HexCoord;
+  remainingTurnBudget?: number;
 }
