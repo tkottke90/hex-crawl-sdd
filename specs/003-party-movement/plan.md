@@ -13,12 +13,13 @@ Milestones
 
 1. Design & Data Model (this step)
   - Finalise save schema additions (`deathMarkers: {coord, name}[]`, `remainingTurnBudget`) and world-map state.
-  - Surface "End Turn" as a required world-map control: a dedicated button plus a keyboard shortcut.
+  - Surface "End Turn" as a required world-map control: a dedicated button plus a keyboard shortcut, and wire turn-boundary refresh hooks for combat and town returns.
 
 2. Core Movement Engine
   - Replace single-character move flow in `WorldMap.ts` with party-move flow.
   - Use A* from `HexCoordUtils` to compute single path, truncate to remaining budget, apply to all members.
   - Decrement `remainingTurnBudget` by tiles traversed; hide reachable highlights when budget == 0.
+  - Keep tile exploration and POI triggers tied to the shared destination only.
 
 3. UX & Visuals
   - Tile highlight overlay (in-range based on remaining budget).
@@ -32,17 +33,15 @@ Milestones
 
 5. Testing & QA
   - Unit tests for movement-range calculation (DEX modifiers), path truncation, death-marker serialisation.
-  - Integration tests: world-map flows (save/load, remaining budget persistence, legacy save repair, death handling).
+  - Integration tests: world-map flows (save/load, remaining budget persistence, legacy save repair, death handling, and death-marker render timing on restore).
   - e2e smoke test: party moves together; death markers persist after save/load; turn budget refresh on turn boundary.
 
 Deliverables
 - `specs/003-party-movement/data-model.md`
 - `specs/003-party-movement/tasks.md`
-- `src/game/scenes/WorldMap.ts` changes + small helpers (`TurnBudgetManager`, `DeathMarkerStore`)
+- `src/game/scenes/WorldMap.ts` changes + small helpers (`TurnBudgetManager`, `PartyMovementPlanner`, `DeathMarkerStore`)
 - Tests under `tests/unit/` and `tests/e2e/`
 
 Risks
 - UI tuning for budget visibility (playtesting required).
 - Save migration complexity for many legacy saves (mitigate by conservative repair to PC tile).
-
-Next: validate the data model and task order against this plan, then start implementing the core movement changes.

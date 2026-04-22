@@ -18,7 +18,7 @@
 - [ ] T003 [P] Add unit coverage for turn-budget math in `tests/unit/world-map/TurnBudgetManager.test.ts`.
 - [ ] T004 [P] Add unit coverage for death-marker storage in `tests/unit/world-map/DeathMarkerStore.test.ts`.
 - [ ] T005 [P] Add save schema and migration regression coverage for `deathMarkers` and `remainingTurnBudget` in `tests/unit/save/serialise.test.ts` and `tests/unit/save/migration.test.ts`.
-- [ ] T006 [P] Add path truncation, zero-path, and shared-destination side-effect coverage in `tests/unit/hex-grid/pathfinding.test.ts` and `tests/unit/world-map/party-movement.test.ts`.
+- [ ] T006 [P] Add path truncation, zero-path, exploration-once, and shared-destination POI coverage in `tests/unit/hex-grid/pathfinding.test.ts` and `tests/unit/world-map/party-movement.test.ts`.
 
 **Checkpoint**: The shared behavior is now specified by tests and ready for implementation.
 
