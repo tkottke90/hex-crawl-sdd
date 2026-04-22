@@ -130,8 +130,7 @@ When a party member is killed (e.g., returning from combat), they leave the part
 
 ### Session 2026-04-21
 
-- Q: Is world-map movement unlimited (click any reachable tile) or does it use a per-action budget? → A: Stamina/resource-based — party has a **movement range** per action that depletes with distance, derived from DEX modifiers.
-- Q: What is the minimum movement range floor? → A: 2 tiles — exposed as a named tunable constant (`MIN_PARTY_MOVE_RANGE`) so it can be adjusted during playtesting without touching the formula.
+- Q: Is world-map movement unlimited (click any reachable tile) or does it use a per-action budget? → A: Fixed per-turn budget — the party has a movement budget that depletes across multiple clicks within a turn and refreshes on turn-boundary events.
 - Q: What is the minimum movement range floor, and should it be tunable? → A: Minimum = 2 tiles, exposed as a named constant (`MIN_PARTY_MOVE_RANGE = 2`) so it can be adjusted during playtesting without touching the formula.
 - Q: Should dead/inactive characters contribute their DEX to the movement range formula? → A: No — only `status === 'active'` characters contribute. Furthermore, when a character dies they MUST be removed from the active party entirely and a death marker MUST be placed on the world map tile where they died. Dead characters no longer appear as sprites on the map.
 - Q: Should death markers persist through save and reload? → A: Yes — death marker positions and names (as `{ coord, name }` entries) are serialised into the save file and restored on every load.
