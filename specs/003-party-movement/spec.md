@@ -73,8 +73,10 @@ When a party member is killed (e.g., returning from combat), they leave the part
 
 ### Edge Cases
 
-- What happens when a party member is dead or inactive? Dead characters are removed from the party roster and the world map. A death marker is placed on their last tile. They do not contribute to movement range.
+- What happens when a party member is dead or inactive? Dead **non-PC** characters are removed from the party roster and the world map. A death marker is placed on their last tile. They do not contribute to movement range. PC death triggers the run-over condition via the existing `RunEndDetector` flow and does not reach world-map cleanup logic.
 - What if pathfinding returns different path lengths for different party members (they're on the same tile so this shouldn't happen, but is guarded)? The party always shares a starting tile so a single path is computed from the shared position.
+- What if the A* path to a destination exceeds the **remaining turn budget**? The path is truncated to the last tile within the remaining budget; the party moves there. POI triggers fire based on the truncated endpoint. The remaining budget decrements accordingly.
+- What if the player has 0 remaining turn budget? All tile clicks are silently ignored. The highlight overlay shows no reachable tiles. The player must end their turn to refresh.
 - What if the destination tile triggers combat? Only the party's shared destination matters — combat launches once, not per-character.
 - What if the party has only one member (e.g., the Ward was lost)? Movement works the same; the single survivor moves to the destination.
 - What if no path exists to the hovered tile? The path preview is hidden; no error or crash occurs.
@@ -85,15 +87,17 @@ When a party member is killed (e.g., returning from combat), they leave the part
 
 ### Functional Requirements
 
-- **FR-001**: When the player clicks a passable tile on the world map within the party's current movement range, the system MUST move **all** active party members to that destination tile in a single action. Tiles beyond the movement range MUST be unselectable (click ignored or silently rejected).
-- **FR-002**: Movement MUST be computed using a single path from the party's shared current tile to the destination. The path length MUST NOT exceed the party's movement range for that action. The path is applied to all party members simultaneously.
-- **FR-010**: The party's movement range per action MUST be calculated as `Math.max(MIN_PARTY_MOVE_RANGE, 1 + sum(dexModifier(m) for m in party where m.status === 'active'))` where `dexModifier(stat) = Math.ceil((stat − 10) / 2)`, giving: stat 10 → +0, 11–12 → +1, 13–14 → +2, 8–9 → −1, 6–7 → −2, etc. `MIN_PARTY_MOVE_RANGE` is a named tunable constant (default: 2) that can be adjusted during playtesting without modifying the formula.
+- **FR-001**: When the player clicks a tile on the world map, the system MUST compute the A* path from the party's shared tile to the destination. If any portion of that path falls within the movement range budget, the party MUST move to the last passable tile on the path that is within the budget (path truncation). If the path is zero steps (impassable or no path found), the click is silently ignored.
+- **FR-002**: Movement MUST be computed using a single A* path from the party's shared current tile to the clicked destination. If the full path exceeds the **remaining turn budget**, the path MUST be truncated to the last tile within the remaining budget; the party moves to that truncated endpoint. The (possibly truncated) path is applied to all party members simultaneously. The remaining turn budget MUST be decremented by the number of tiles actually traversed.
+- **FR-010**: Movement is **turn-based**. At the start of each turn, the party receives a tile budget equal to `Math.max(MIN_PARTY_MOVE_RANGE, 1 + sum(dexModifier(m) for m in party where m.status === 'active'))` where `dexModifier(stat) = Math.ceil((stat − 10) / 2)`, giving: stat 10 → +0, 11–12 → +1, 13–14 → +2, 8–9 → −1, 6–7 → −2, etc. `MIN_PARTY_MOVE_RANGE` is a named tunable constant (default: 2). The budget depletes across multiple clicks within the same turn; each move subtracts tiles traversed from the remaining budget. When the remaining budget reaches 0, all further clicks are silently ignored until the turn refreshes. The turn refresh trigger is defined by the narrative/encounter layer (see FR-016).
+- **FR-015**: The remaining turn budget MUST be displayed to the player at all times while on the world map (e.g., a numeric label or pip indicator). The tile highlight overlay MUST reflect the remaining budget (not the full turn budget), updating after each move.
+- **FR-016**: The turn budget MUST be fully refreshed (reset to the full formula value) when a defined turn-boundary event occurs. Turn-boundary events include at minimum: returning from a combat scene, returning from a town panel, and an explicit "End Turn" player action. Additional narrative triggers may be added by the game layer without modifying the movement system.
 - **FR-011**: The movement range MUST be recalculated any time the party composition changes (character joins, leaves, or dies).
 - **FR-012**: The movement range for the current action MUST be visually communicated to the player via two mechanisms:
   - **Tile highlight**: All passable tiles within the computed movement range MUST receive a visible colour overlay distinguishing them from out-of-range tiles.
   - **Hover path preview**: When the player hovers the cursor over any tile, the system MUST compute an A* path from the party's current tile to the hovered tile (using cube coordinates) and render it as a line/overlay — yellow for the portion of the path within movement range, red for any portion beyond the movement range. The preview updates live as the cursor moves and disappears when the cursor leaves the map. Path computation MUST be throttled: the A* calculation is only performed when the cursor enters a **new** tile; if the pointer moves within the same tile the previous result is reused.
-- **FR-013**: When a character's `status` transitions to `'dead'`, that character MUST be immediately removed from the active party roster. Their sprite MUST be removed from the world map. The movement range MUST be recalculated.
-- **FR-014**: When a character dies on the world map, a persistent death marker (a distinct visual indicator) MUST be placed on the tile where they died, visible for the remainder of the run. The marker MUST display the character's name at minimum.
+- **FR-013**: When a **non-PC** character's `status` transitions to `'dead'`, that character MUST be immediately removed from the active party roster. Their sprite MUST be removed from the world map. The movement range MUST be recalculated. PC death is handled exclusively by the existing run-end flow (`RunEndDetector`) and MUST NOT reach this world-map removal path.
+- **FR-014**: When a character dies on the world map, a persistent death marker (a distinct visual indicator) MUST be placed on the tile where they died, visible for the remainder of the run. The marker MUST display the character's name at minimum. Death marker positions and names MUST be serialised into the save file (as `{ coord: HexCoord, name: string }` entries) so they survive save/load cycles; on restore, all recorded markers MUST be rendered before the player can take any action.
 - **FR-003**: Tapping a character sprite MUST update the active stat display and camera focus but MUST NOT change which characters participate in the next movement action.
 - **FR-004**: All party member sprites MUST animate to the destination tile simultaneously when movement occurs.
 - **FR-005**: All party members MUST share the same tile coordinate in the data model at all times on the world map after this feature is released.
@@ -117,7 +121,8 @@ When a party member is killed (e.g., returning from combat), they leave the part
 - **SC-003**: Clicking a character sprite and then a destination tile results in all party members moving — this is provable in under 5 seconds of play.
 - **SC-004**: A save/load round-trip preserves the single shared tile for all party members, with no character on a different tile after restore.
 - **SC-005**: Legacy saves with characters on different tiles are automatically repaired on load with no visible error or freeze.
-- **SC-006**: The movement range displayed to the player exactly matches `Math.max(MIN_PARTY_MOVE_RANGE, 1 + sum(Math.ceil((m.dex - 10) / 2) for active m in party))` and updates immediately when the party roster changes.
+- **SC-009**: After a save/load cycle, all death markers recorded in the save (name + coordinate) are rendered on the world map within one render frame of the scene being ready, with no markers missing.
+- **SC-006**: The full turn budget equals `Math.max(MIN_PARTY_MOVE_RANGE, 1 + sum(Math.ceil((m.dex - 10) / 2) for active m in party))` and updates immediately when the party roster changes. The displayed remaining budget decrements by tiles traversed after each move and resets to the full value on each turn-boundary event.
 - **SC-007**: After a character dies (status → `'dead'`), their sprite is absent from the world map and a named death marker is visible on the tile they last occupied within one render frame.
 - **SC-008**: The movement range recalculates within one frame of a character's death, with no stale range shown to the player.
 
@@ -129,7 +134,11 @@ When a party member is killed (e.g., returning from combat), they leave the part
 - Q: What is the minimum movement range floor? → A: 2 tiles — exposed as a named tunable constant (`MIN_PARTY_MOVE_RANGE`) so it can be adjusted during playtesting without touching the formula.
 - Q: What is the minimum movement range floor, and should it be tunable? → A: Minimum = 2 tiles, exposed as a named constant (`MIN_PARTY_MOVE_RANGE = 2`) so it can be adjusted during playtesting without touching the formula.
 - Q: Should dead/inactive characters contribute their DEX to the movement range formula? → A: No — only `status === 'active'` characters contribute. Furthermore, when a character dies they MUST be removed from the active party entirely and a death marker MUST be placed on the world map tile where they died. Dead characters no longer appear as sprites on the map.
-- Q: Should hover path preview A* computation be throttled? → A: Yes — recalculate only when the cursor enters a new tile. If the cursor is still over the same tile as the previous pointer-move event, skip the calculation entirely.
+- Q: Should death markers persist through save and reload? → A: Yes — death marker positions and names (as `{ coord, name }` entries) are serialised into the save file and restored on every load.
+- Q: What feedback should out-of-range tile clicks give the player? → A: Silent ignore — clicks on out-of-range tiles produce no observable effect (no toast, no flash, no animation).
+- Q: When a clicked tile's A* path exceeds the movement range, should the party stop mid-path or is the click ignored? → A: Path truncation — the party moves to the last tile within the budget; the click is never ignored if any portion of the path is reachable.
+- Q: What happens if the PC (Hero) dies — run over or continue? → A: PC death is a game-over / run-end condition. FR-013 and FR-014 (roster removal, death marker) apply to non-PC party members only.
+- Q: Does movement range reset each action or is it a fixed per-turn budget? → A: Fixed per-turn budget — depletes across multiple clicks within a turn, refreshes on turn-boundary events (combat exit, town exit, explicit End Turn). Aligns with combat turn model and enables narrative hooks between turns.
 
 ## Assumptions
 
@@ -137,5 +146,7 @@ When a party member is killed (e.g., returning from combat), they leave the part
 - The game uses a turn-based world map where the player moves one step at a time; there is no simultaneous AI movement on the world map that could interleave with party movement.
 - Combat scenes manage individual character positioning independently; this feature only affects the world map scene.
 - The Ward is always present at game start; adventurers recruited at towns may also be party members and should also benefit from unified movement.
+- PC death is a game-over / run-end condition handled by the existing `RunEndDetector` and `RunEnd` scene. The world-map party-removal and death-marker logic (FR-013, FR-014) applies exclusively to non-PC party members.
+- Movement is turn-based. The per-turn tile budget depletes across multiple clicks and refreshes on defined turn-boundary events (returning from combat, returning from town, or explicit "End Turn" action). This aligns with the combat system's turn model and creates narrative space between turns.
 - Mobile/touch input (tap) is treated the same as mouse click for the purposes of tile selection.
 - The `selectedChar` field is retained for stat panel display and camera focus; its role is narrowed, not removed.
